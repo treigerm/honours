@@ -1,41 +1,29 @@
 #!/bin/bash
 
+set -e # Exit directly if any command fails.
+
 BFCONVERT="/Users/Tim/dev/other/bftools/bfconvert"
 
 TILESIZE=$1
 INPUTFILE=$2
+LOCATIONSFILE=$3
 
 OUTPUT_PREFIX="${INPUTFILE%.*}"
+OUTTYPE=".tiff"
 DONEFILE="${OUTPUT_PREFIX}.done"
 
-SERIES=2
+SERIES=0
 
 if [ -f ${DONEFILE} ]; then
     exit 0
 fi
 
-X_LOC=0
-Y_LOC=0
-
-PREVIOUS_EXIT_CODE=0
-while true; do
-    OUTPUTFILE="${OUTPUT_PREFIX}_${X_LOC}_${Y_LOC}_${TILESIZE}x${TILESIZE}.tiff"
+while IFS='' read -r LINE || [[ -n "$LINE" ]]; do
+    X_LOC=$(echo $LINE | cut -d " " -f 1)
+    Y_LOC=$(echo $LINE | cut -d " " -f 2)
+    OUTPUTFILE="${OUTPUT_PREFIX}_${X_LOC}_${Y_LOC}_${TILESIZE}x${TILESIZE}.${OUTTYPE}"
     ${BFCONVERT} -series ${SERIES} -crop ${X_LOC},${Y_LOC},${TILESIZE},${TILESIZE} \
-    ${INPUTFILE} ${OUTPUTFILE}
-    if [ $? -ne 0 ]; then
-        if [ ${X_LOC} -eq 0 ]; then
-            # We reached the end of the y-axis.
-            break
-        elif [ ${PREVIOUS_EXIT_CODE} -ne 0 ]; then
-            >&2 echo "Exit because of two failed attempts in a row"
-            exit 1
-        fi
-        X_LOC=0
-        Y_LOC=$((Y_LOC + TILESIZE))
-        PREVIOUS_EXIT_CODE=1
-    else
-        X_LOC=$((X_LOC + TILESIZE))
-    fi
-done
+    ${INPUTFILE} ${OUTPUTFILE} 
+done < ${LOCATIONSFILE}
 
 touch ${DONEFILE}

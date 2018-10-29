@@ -18,11 +18,12 @@ def non_white_density(image):
     pix_dens = np.logical_and(c1_c2_dens, c3_dens)
     return np.sum(pix_dens) / float(pix_dens.size)
 
-def main(infile, tilesize):
+def main(infile, tilesize, top_n=10):
     slide = openslide.OpenSlide(infile)
     (max_x, max_y) = slide.dimensions
     cur_x, cur_y = 0, 0
     
+    tile_densities = []
     while True:
         if cur_y + tilesize > max_y:
             break
@@ -34,9 +35,13 @@ def main(infile, tilesize):
         
         tile = slide.read_region((cur_x, cur_y), SERIES, (tilesize, tilesize))
         density = non_white_density(np.array(tile))
-        print("{}\t{}\t{}".format(cur_x, cur_y, density))
+        tile_densities.append(((cur_x, cur_y), density))
+        #print("{}\t{}\t{}".format(cur_x, cur_y, density))
         cur_x += tilesize
-    
+
+    top_n_tiles = sorted(tile_densities, key=lambda x: x[1], reverse=True)[:top_n]
+    for (x_loc, y_loc), _ in top_n_tiles:
+        print("{}\t{}".format(x_loc, y_loc))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
