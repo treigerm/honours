@@ -22,7 +22,7 @@ for FILE in ${IMAGEDIR}/*.svs; do
         echo "Finding densest tiles for ${FILE}"
         ${SCRIPTSDIR}/find_dense_tiles.py --infile $FILE --tilesize ${TILESIZE} > ${TILESFILE}
     fi
-    ${SCRIPTSDIR}/svs2tiles.sh ${TILESIZE} ${FILE} ${TILESFILE}
+    ${SCRIPTSDIR}/svs2tiles.py --tilesize ${TILESIZE} --infile ${FILE} < ${TILESFILE}
 done
 
 touch ${DONEFILE}

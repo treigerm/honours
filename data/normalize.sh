@@ -4,7 +4,7 @@ set -e
 
 MATLAB="/Applications/MATLAB_R2016b.app/bin/matlab"
 SCRIPTDIR="/Users/Tim/dev/cw/honours/data" # Location of stain_normalization.m
-TOOLBOXDIR="/Users/Tim/Documents/MATLAB/stain_normalisation_toolbox"
+TOOLBOXDIR="/Users/Tim/Documents/MATLAB/stain_normalisation_toolbox" # Location of stain normalisation toolbox
 
 SOURCEFILE=$1
 REFERENCEFILE=$2

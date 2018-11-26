@@ -42,6 +42,8 @@ def main(infile, tilesize, top_n=10):
     top_n_tiles = sorted(tile_densities, key=lambda x: x[1], reverse=True)[:top_n]
     for (x_loc, y_loc), _ in top_n_tiles:
         print("{}\t{}".format(x_loc, y_loc))
+    
+    slide.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
