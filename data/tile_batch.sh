@@ -18,9 +18,11 @@ fi
 for FILE in ${IMAGEDIR}/*.svs; do
     OUTPUT_PREFIX="${FILE%.*}"
     TILESFILE="${OUTPUT_PREFIX}.tiles.txt"
-    if [ ! -f ${TILESFILE} ]; then
+    TILESDONE="${OUTPUT_PREFIX}.tiles.done"
+    if [ ! -f ${TILESDONE} ]; then
         echo "Finding densest tiles for ${FILE}"
         ${SCRIPTSDIR}/find_dense_tiles.py --infile $FILE --tilesize ${TILESIZE} > ${TILESFILE}
+        touch ${TILESDONE}
     fi
     ${SCRIPTSDIR}/svs2tiles.py --tilesize ${TILESIZE} --infile ${FILE} < ${TILESFILE}
 done
