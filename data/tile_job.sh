@@ -8,8 +8,9 @@ set -e
 # Initialise the environment modules
 . /etc/profile.d/modules.sh
 
-# Load Anaconda
+# Load environment
 module load anaconda
+source activate honours
 
 SCRIPTSDIR="/home/s1547426/dev/honours/data"
 
