@@ -18,4 +18,4 @@ NUM_CORES=8
 TILESIZE=1000
 
 find $DATADIR -mindepth 1 -maxdepth 1 -type d | \
-    parallel --dryrun -j $NUM_CORES ${SCRIPTSDIR}/tile_batch.sh {} $TILESIZE
+    parallel -j $NUM_CORES ${SCRIPTSDIR}/tile_batch.sh {} $TILESIZE
