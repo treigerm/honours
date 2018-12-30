@@ -18,7 +18,7 @@ set -e
 module load anaconda
 source activate honours
 
-SCRIPTSDIR="/home/s1547426/dev/honours/data"
+SCRIPTSDIR="/home/s1547426/dev/honours/preprocessing"
 
 DATADIR="$1"
 NUM_CORES=16

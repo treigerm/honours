@@ -2,7 +2,7 @@
 
 set -e
 
-SCRIPTSDIR="$HOME/dev/cw/honours/data"
+SCRIPTSDIR="$HOME/dev/cw/honours/preprocessing"
 
 # Directory that .svs file is located.
 IMAGEDIR=$1
