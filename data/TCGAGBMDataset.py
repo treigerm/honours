@@ -24,6 +24,7 @@ class TCGAGBMDataset(Dataset):
         return len(self.slides_frame)
     
     def __getitem__(self, idx):
+        # TODO: Have torch.Tensor of shape 3x128x128
         relative_path = self.slides_frame.iloc[idx, 0]
         slide_path = os.path.join(self.root_dir, relative_path)
         slide = np.array(Image.open(slide_path).convert("RGB"))
