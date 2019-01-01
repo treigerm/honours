@@ -16,8 +16,6 @@ class Reshape(nn.Module):
 class CAE(nn.Module):
     """
     CAE modelled after https://github.com/daniel-munro/imageCCA/blob/master/CAE/CAE_GTEx.py.
-
-    TODO: They do not seem to lower the dimensionality of the images, is this correct?
     """
 
     def __init__(self):
@@ -25,15 +23,9 @@ class CAE(nn.Module):
         self.kernel_size = 5
         self.pool_size = 2
         self.hidden_dims = 1024
-    
-    def encode(self, x):
-        """
-        Args:
-            x (torch.Tensor): Shape (batch_size, 3, 128, 128)
-        """
-        # TODO: Input must be (batch_size, channels, 128, 128)
+
         # Use padding 2 to keep the input output dimensions the same.
-        encoder = nn.Sequential(
+        self.encoder = nn.Sequential(                        # In:  (b, 3, 128, 128)
             nn.Conv2d(3, 8, self.kernel_size, padding=2),    # Out: (b, 8, 128, 128)
             nn.MaxPool2d(self.pool_size),                    # Out: (b, 8, 64, 64)
             nn.ReLU(inplace=True),
@@ -52,14 +44,8 @@ class CAE(nn.Module):
             Flatten(),
             nn.Linear(128*4*4, self.hidden_dims)             # Out: (b, self.hidden_dims)
         )
-        return encoder(x)
-    
-    def decode(self, x):
-        """
-        Args:
-            x (torch.Tensor): Shape (batch_size, self.hidden_dims)
-        """
-        decoder = nn.Sequential(                   
+
+        self.decoder = nn.Sequential(                                 # In: (b, self.hidden_dims)       
             nn.Linear(self.hidden_dims, 128*4*4),
             nn.ReLU(True),
             Reshape(-1, 128, 4, 4),
@@ -79,7 +65,6 @@ class CAE(nn.Module):
             nn.ConvTranspose2d(8, 3, self.kernel_size, padding=2),    # Out: (b, 3, 128, 128)
             nn.ReLU(True)
         )
-        return decoder(x)
     
     def forward(self, x):
-        return self.decode(self.encode(x))
+        return self.decoder(self.encoder(x))
