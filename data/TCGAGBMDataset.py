@@ -5,6 +5,7 @@ import numpy as np
 import torch
 from PIL import Image
 from torch.utils.data import Dataset
+import torchvision
 
 SLIDE_WIDTH = 1000
 SLIDE_HEIGHT = 1000
@@ -20,12 +21,13 @@ class TCGAGBMDataset(Dataset):
     # TODO: Describe folder structure.
     # TODO: Describe tiling structure.
 
-    def __init__(self, csv_file, root_dir, transform=None):
+    def __init__(self, data_frame, root_dir, transform=None):
         """
         Args:
-            csv_file (string): Path to the csv file with annotations.
+            data_frame (pandas.DataFrame)
+            root_dir (String)
         """
-        self.slides_frame = pd.read_csv(csv_file)
+        self.slides_frame = data_frame
         self.root_dir = root_dir
         self.transform = transform
 
@@ -64,12 +66,24 @@ class TCGAGBMDataset(Dataset):
                       y_sub_slide:(y_sub_slide + ITEM_HEIGHT)]
 
         label = self.slides_frame.iloc[slide_idx, 1]
-        # Change tensore from (width, height, channels) to 
-        # (channels, width, height).
-        slide = torch.tensor(slide, dtype=torch.float).permute(2, 0, 1)
         sample = {"slide": slide, "label": label}
 
         if self.transform:
             sample = self.transform(sample)
         
         return sample
+
+class ToTensor(object):
+    """Convert numpy.ndarray in sample to torch.Tensor."""
+
+    def __init__(self, device):
+        self.device = device
+    
+    def __call__(self, sample):
+        slide, label = sample["slide"], sample["label"]
+
+        # Transforms image data from shape (W, H, C) to (C, W, H) and from 
+        # range (0, 255) to (0, 1).
+        slide = torchvision.transforms.functional.to_tensor(slide)
+        label = torch.tensor(label).float()
+        return {"slide": slide.to(self.device), "label": label.to(self.device)}
