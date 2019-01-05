@@ -9,7 +9,8 @@ import tqdm
 
 from data.TCGAGBMDataset import TCGAGBMDataset, ToTensor
 from data.dataset import CrossValDataset
-from models.CAE import CAE
+from models.cae import CAE, TestCAE
+from models.factory import get_model
 
 # TODO: Save config.
 # TODO: Save best model.
@@ -53,7 +54,7 @@ def main(config):
         dataset.get_val_set(), batch_size=config["test_batch_size"], 
         shuffle=True, num_workers=4)
 
-    model = CAE().to(device)
+    model = get_model(config["model_name"]).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"],
                                  weight_decay=config["weight_decay"])
     loss_fn = torch.nn.MSELoss()
