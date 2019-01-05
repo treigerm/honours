@@ -3,6 +3,8 @@
 import torch
 import os
 import tensorboardX
+import argparse
+import yaml
 
 from data.TCGAGBMDataset import TCGAGBMDataset, ToTensor
 from data.dataset import CrossValDataset
@@ -81,12 +83,14 @@ def main(config):
     writer.export_scalars_to_json(os.path.join(LOGGING_DIR, config["exp_name"]))
 
 if __name__ == "__main__":
-    config = {
-        "exp_name": "test_exp",
-        "batch_size": 4,
-        "test_batch_size": 100,
-        "learning_rate": 5e-3,
-        "weight_decay": 1e-5,
-        "num_epochs": 100
-    }
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", type=str, 
+                        help="YAML file with configuration parameters")
+    args = parser.parse_args()
+
+    with open(args.config, "r") as f:
+        config = yaml.load(f)
+        for k, v in config.items():
+            print("{}: {}".format(k, v))
+
     main(config)
