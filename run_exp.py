@@ -5,6 +5,7 @@ import os
 import tensorboardX
 import argparse
 import yaml
+import tqdm
 
 from data.TCGAGBMDataset import TCGAGBMDataset, ToTensor
 from data.dataset import CrossValDataset
@@ -58,17 +59,20 @@ def main(config):
     loss_fn = torch.nn.MSELoss()
     for i_epoch in range(config["num_epochs"]):
         train_loss = 0
-        for i_batch, batch in enumerate(train_loader):
-            slides = batch["slide"]
+        with tqdm.tqdm(total=len(train_loader)) as pbar:
+            for i_batch, batch in enumerate(train_loader):
+                slides = batch["slide"]
 
-            model.train()
-            optimizer.zero_grad()
+                model.train()
+                optimizer.zero_grad()
 
-            loss = loss_fn(model(slides), slides)
-            writer.add_scalar("data/batch_loss", loss, i_batch)
-            train_loss += loss
-            loss.backward()
-            optimizer.step()
+                loss = loss_fn(model(slides), slides)
+                writer.add_scalar("data/batch_loss", loss, i_batch)
+                train_loss += loss
+                loss.backward()
+                optimizer.step()
+                pbar.update(1)
+                pbar.set_description("loss: {:.4f}".format(loss))
 
         print("Epoch {}".format(i_epoch))
 
