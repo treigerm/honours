@@ -11,10 +11,7 @@ from data.TCGAGBMDataset import TCGAGBMDataset, ToTensor
 from data.dataset import CrossValDataset
 from models.cae import CAE, TestCAE
 from models.factory import get_model
-from utils.logging import make_exp_dir
-
-# TODO: Save best model.
-# TODO: Set random seeds.
+from utils.logging import make_exp_dir, save_checkpoint
 
 DEVICE = "cpu"
 
@@ -57,6 +54,8 @@ def main(config, exp_dir):
     optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"],
                                  weight_decay=config["weight_decay"])
     loss_fn = torch.nn.MSELoss()
+
+    best_val_loss = float("inf")
     for i_epoch in range(config["num_epochs"]):
         train_loss = 0
         with tqdm.tqdm(total=len(train_loader)) as pbar:
@@ -78,10 +77,19 @@ def main(config, exp_dir):
 
         train_loss /= len(train_loader)
         val_loss = test(model, loss_fn, val_loader)
-        print("Epoch {} train loss: {:.4f} val loss: {:.4f}".format(i_epoch, train_loss, val_loss))
+
+        print("Epoch {} train loss: {:.4f} val loss: {:.4f}".format(i_epoch + 1, train_loss, val_loss))
         writer.add_scalars("data/loss", {"train_loss": train_loss, 
                                         "val_loss": val_loss}, i_epoch)
-        
+        is_best = val_loss < best_val_loss
+        save_checkpoint({
+            "epoch": i_epoch + 1,
+            "model_name": config["model_name"],
+            "state_dict": model.state_dict(),
+            "best_val_loss": best_val_loss,
+            "optimizer": optimizer.state_dict()
+        }, is_best, path=exp_dir)
+
         if i_epoch == 1:
             break
     
