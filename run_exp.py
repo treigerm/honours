@@ -76,8 +76,6 @@ def main(config, exp_dir):
                 optimizer.step()
                 pbar.update(1)
                 pbar.set_description("loss: {:.4f}".format(loss))
-                if i_batch == 5:
-                    break
 
         train_loss /= len(train_loader)
         val_loss = test(model, loss_fn, val_loader)
@@ -96,9 +94,6 @@ def main(config, exp_dir):
             "best_val_loss": best_val_loss,
             "optimizer": optimizer.state_dict()
         }, is_best, path=exp_dir)
-
-        if i_epoch == 1:
-            break
     
     writer.export_scalars_to_json(os.path.join(exp_dir, "metrics.json"))
 

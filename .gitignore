@@ -4,3 +4,6 @@ __pycache__
 
 # VSCode
 .vscode
+
+# Config file
+config.yaml
