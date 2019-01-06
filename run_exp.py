@@ -11,10 +11,9 @@ from data.TCGAGBMDataset import TCGAGBMDataset, ToTensor
 from data.dataset import CrossValDataset
 from models.cae import CAE, TestCAE
 from models.factory import get_model
+from utils.logging import make_exp_dir
 
-# TODO: Save config.
 # TODO: Save best model.
-# TODO: Implement logging.
 # TODO: Set random seeds.
 
 DEVICE = "cpu"
@@ -39,7 +38,7 @@ def test(model, loss_fn, test_loader):
     return test_loss / len(test_loader)
 
 
-def main(config):
+def main(config, exp_dir):
     device = DEVICE
 
     writer = tensorboardX.SummaryWriter(os.path.join(TENSORBOARD_DIR, 
@@ -74,18 +73,19 @@ def main(config):
                 optimizer.step()
                 pbar.update(1)
                 pbar.set_description("loss: {:.4f}".format(loss))
-
-        print("Epoch {}".format(i_epoch))
+                if i_batch == 5:
+                    break
 
         train_loss /= len(train_loader)
-        test_loss = test(model, loss_fn, val_loader)
-        writer.add_scalar("data/loss", {"train_loss": train_loss, 
-                                        "test_loss": test_loss}, i_epoch)
+        val_loss = test(model, loss_fn, val_loader)
+        print("Epoch {} train loss: {:.4f} val loss: {:.4f}".format(i_epoch, train_loss, val_loss))
+        writer.add_scalars("data/loss", {"train_loss": train_loss, 
+                                        "val_loss": val_loss}, i_epoch)
         
         if i_epoch == 1:
             break
     
-    writer.export_scalars_to_json(os.path.join(LOGGING_DIR, config["exp_name"]))
+    writer.export_scalars_to_json(os.path.join(exp_dir, "metrics.json"))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -98,4 +98,9 @@ if __name__ == "__main__":
         for k, v in config.items():
             print("{}: {}".format(k, v))
 
-    main(config)
+    exp_dir = make_exp_dir(LOGGING_DIR, config["exp_name"])
+
+    with open(os.path.join(exp_dir, "config.yaml"), "w+") as f:
+        yaml.dump(config, f, default_flow_style=False)
+
+    main(config, exp_dir)
