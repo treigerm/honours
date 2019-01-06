@@ -13,6 +13,8 @@ from models.cae import CAE, TestCAE
 from models.factory import get_model
 from utils.logging import make_exp_dir, save_checkpoint
 
+RANDOM_SEED = 42
+
 DEVICE = "cpu"
 
 DATA_DIR = "/Users/Tim/data/tcga_luad/gdc_download_20181013_213421.982108"
@@ -36,10 +38,12 @@ def test(model, loss_fn, test_loader):
 
 
 def main(config, exp_dir):
+    torch.manual_seed(RANDOM_SEED)
+
     device = DEVICE
 
     writer = tensorboardX.SummaryWriter(os.path.join(TENSORBOARD_DIR, 
-                                                     config["exp_name"]))
+                                                     os.path.basename(exp_dir)))
 
     dataset = CrossValDataset(DATA_CSV, DATA_DIR, TRAIN_SIZE, VAL_SIZE, 
                               transform=ToTensor(device))
@@ -78,9 +82,12 @@ def main(config, exp_dir):
         train_loss /= len(train_loader)
         val_loss = test(model, loss_fn, val_loader)
 
-        print("Epoch {} train loss: {:.4f} val loss: {:.4f}".format(i_epoch + 1, train_loss, val_loss))
+        print("Epoch {} train loss: {:.4f} val loss: {:.4f}".format(
+            i_epoch + 1, train_loss, val_loss
+        ))
         writer.add_scalars("data/loss", {"train_loss": train_loss, 
                                         "val_loss": val_loss}, i_epoch)
+
         is_best = val_loss < best_val_loss
         save_checkpoint({
             "epoch": i_epoch + 1,
