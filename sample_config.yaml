@@ -1,9 +1,24 @@
 exp_name: "test_exp"
 
+# Hyperparameters
 model_name: "test_cae"
-
 batch_size: 4
 test_batch_size: 100
 learning_rate: 0.0005
 weight_decay: 0.00001
-num_epochs: 5
+num_epochs: 2
+
+# Cross validation
+train_size: 0.7
+val_size: 0.2
+
+# Environment configuration
+data_dir: "/Users/Tim/data/tcga_luad/gdc_download_20181013_213421.982108"
+data_csv: "/Users/Tim/data/tcga_luad/gdc_download_20181013_213421.982108/tile_locations.csv"
+
+tensorboard_dir: "/Users/Tim/dev/cw/honours/tensorboard"
+logging_dir: "/Users/Tim/dev/cw/honours/logs"
+
+use_gpu: False
+
+random_seed: 42

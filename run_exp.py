@@ -13,18 +13,6 @@ from models.cae import CAE, TestCAE
 from models.factory import get_model
 from utils.logging import make_exp_dir, save_checkpoint
 
-RANDOM_SEED = 42
-
-DEVICE = "cpu"
-
-DATA_DIR = "/Users/Tim/data/tcga_luad/gdc_download_20181013_213421.982108"
-DATA_CSV = "/Users/Tim/data/tcga_luad/gdc_download_20181013_213421.982108/tile_locations.csv"
-
-TENSORBOARD_DIR = "/Users/Tim/dev/cw/honours/tensorboard"
-LOGGING_DIR = "/Users/Tim/dev/cw/honours/logs"
-
-TRAIN_SIZE = 0.7
-VAL_SIZE = 0.2
 
 def test(model, loss_fn, test_loader):
     model.eval()
@@ -38,15 +26,20 @@ def test(model, loss_fn, test_loader):
 
 
 def main(config, exp_dir):
-    torch.manual_seed(RANDOM_SEED)
+    torch.manual_seed(config["random_seed"])
 
-    device = DEVICE
+    device = torch.device("cuda" if config["use_gpu"] else "cpu")
 
-    writer = tensorboardX.SummaryWriter(os.path.join(TENSORBOARD_DIR, 
+    writer = tensorboardX.SummaryWriter(os.path.join(config["tensorboard_dir"], 
                                                      os.path.basename(exp_dir)))
 
-    dataset = CrossValDataset(DATA_CSV, DATA_DIR, TRAIN_SIZE, VAL_SIZE, 
-                              transform=ToTensor(device))
+    dataset = CrossValDataset(
+        config["data_csv"], 
+        config["data_dir"], 
+        config["train_size"], 
+        config["val_size"], 
+        transform=ToTensor(device)
+    )
     train_loader = torch.utils.data.DataLoader(
         dataset.get_train_set(), batch_size=config["batch_size"], shuffle=True,
         num_workers=4)
@@ -108,7 +101,7 @@ if __name__ == "__main__":
         for k, v in config.items():
             print("{}: {}".format(k, v))
 
-    exp_dir = make_exp_dir(LOGGING_DIR, config["exp_name"])
+    exp_dir = make_exp_dir(config["logging_dir"], config["exp_name"])
 
     with open(os.path.join(exp_dir, "config.yaml"), "w+") as f:
         yaml.dump(config, f, default_flow_style=False)

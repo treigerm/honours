@@ -9,7 +9,7 @@ FIELDNAMES = ["relative_path", "label", "patientID"]
 
 def find_tiff_files(root_dir, sub_dir):
     # TODO: Describe directory structure.
-    d = os.path.join(root_dir, sub_dir, "data_images")
+    d = os.path.join(root_dir, sub_dir, "write_access_data_images")
     os.chdir(d)
     # Find all .tiff tiles.
     return glob.glob("*/*.tiff")
