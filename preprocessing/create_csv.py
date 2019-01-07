@@ -9,7 +9,7 @@ FIELDNAMES = ["relative_path", "label", "patientID"]
 
 def find_tiff_files(root_dir, sub_dir):
     # TODO: Describe directory structure.
-    d = os.path.join(root_dir, sub_dir)
+    d = os.path.join(root_dir, sub_dir, "data_images")
     os.chdir(d)
     # Find all .tiff tiles.
     return glob.glob("*/*.tiff")
@@ -29,6 +29,7 @@ def main(root_dir, csv_filename, survival_dir=None, non_survival_dir=None):
                 writer.writerow(row)
 
 if __name__ == "__main__":
+    # TODO: Descriptions of arguments.
     parser = argparse.ArgumentParser()
     parser.add_argument("--root-dir")
     parser.add_argument("--csv-filename")
