@@ -9,13 +9,14 @@ FIELDNAMES = ["relative_path", "label", "patientID"]
 
 def find_tiff_files(root_dir, sub_dir, image_dir=None):
     # TODO: Describe directory structure.
-    d = os.path.join(root_dir, sub_dir)
-    os.chdir(d)
+    os.chdir(root_dir)
     # Find all .tiff tiles.
     if image_dir is not None:
-        return glob.glob("{}/*/*.tiff".format(image_dir))
+        sub_path = os.path.join(sub_dir, image_dir)
     else:
-        return glob.glob("*/*.tiff")
+        sub_path = sub_dir
+
+    return glob.glob("{}/*/*.tiff".format(sub_path))
 
 def main(root_dir, 
          csv_filename, 
