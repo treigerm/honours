@@ -14,12 +14,12 @@ from models.factory import get_model
 from utils.logging import make_exp_dir, save_checkpoint
 
 
-def test(model, loss_fn, test_loader):
+def test(model, device, loss_fn, test_loader):
     model.eval()
     test_loss = 0
     with torch.no_grad():
         for batch in test_loader:
-            slides = batch["slide"]
+            slides = batch["slide"].to(device)
             test_loss += loss_fn(model(slides), slides)
     
     return test_loss / len(test_loader)
@@ -57,7 +57,7 @@ def main(config, exp_dir):
         train_loss = 0
         with tqdm.tqdm(total=len(train_loader)) as pbar:
             for i_batch, batch in enumerate(train_loader):
-                slides = batch["slide"]
+                slides = batch["slide"].to(device)
 
                 model.train()
                 optimizer.zero_grad()
@@ -71,7 +71,7 @@ def main(config, exp_dir):
                 pbar.set_description("loss: {:.4f}".format(loss))
 
         train_loss /= len(train_loader)
-        val_loss = test(model, loss_fn, val_loader)
+        val_loss = test(model, device, loss_fn, val_loader)
 
         print("Epoch {} train loss: {:.4f} val loss: {:.4f}".format(
             i_epoch + 1, train_loss, val_loss

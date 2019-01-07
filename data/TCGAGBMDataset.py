@@ -86,4 +86,4 @@ class ToTensor(object):
         # range (0, 255) to (0, 1).
         slide = torchvision.transforms.functional.to_tensor(slide)
         label = torch.tensor(label).float()
-        return {"slide": slide.to(self.device), "label": label.to(self.device)}
+        return {"slide": slide, "label": label}
