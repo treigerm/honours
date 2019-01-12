@@ -5,7 +5,6 @@ import os
 import tensorboardX
 import argparse
 import yaml
-import tqdm
 
 from data.TCGAGBMDataset import TCGAGBMDataset, ToTensor
 from data.dataset import CrossValDataset
@@ -53,40 +52,42 @@ def main(config, exp_dir):
     loss_fn = torch.nn.MSELoss()
 
     best_val_loss = float("inf")
-    for i_epoch in range(config["num_epochs"]):
-        train_loss = 0
-        with tqdm.tqdm(total=len(train_loader)) as pbar:
-            for i_batch, batch in enumerate(train_loader):
-                slides = batch["slide"].to(device)
+    i_episode = 1
+    keep_training = True
+    while keep_training:
+        for batch in train_loader:
+            slides = batch["slide"].to(device)
 
-                model.train()
-                optimizer.zero_grad()
+            model.train()
+            optimizer.zero_grad()
 
-                loss = loss_fn(model(slides), slides)
-                writer.add_scalar("data/batch_loss", loss, i_batch)
-                train_loss += loss
-                loss.backward()
-                optimizer.step()
-                pbar.update(1)
-                pbar.set_description("loss: {:.4f}".format(loss))
+            loss = loss_fn(model(slides), slides)
+            loss.backward()
+            optimizer.step()
 
-        train_loss /= len(train_loader)
-        val_loss = test(model, device, loss_fn, val_loader)
+            if i_episode % config["eval_steps"] == 0:
+                val_loss = test(model, device, loss_fn, val_loader)
 
-        print("Epoch {} train loss: {:.4f} val loss: {:.4f}".format(
-            i_epoch + 1, train_loss, val_loss
-        ))
-        writer.add_scalars("data/loss", {"train_loss": train_loss, 
-                                        "val_loss": val_loss}, i_epoch)
+                print("Episode {}\ttrain loss: {:.4e} val loss: {:.4e}".format(
+                    i_episode, loss, val_loss
+                ))
+                writer.add_scalars("data/losses", {"val_loss": val_loss,
+                                                   "train_loss": loss}, i_episode)
 
-        is_best = val_loss < best_val_loss
-        save_checkpoint({
-            "epoch": i_epoch + 1,
-            "model_name": config["model_name"],
-            "state_dict": model.state_dict(),
-            "best_val_loss": best_val_loss,
-            "optimizer": optimizer.state_dict()
-        }, is_best, path=exp_dir)
+                is_best = val_loss < best_val_loss
+                best_val_loss = val_loss if is_best else best_val_loss
+                save_checkpoint({
+                    "epoch": i_episode,
+                    "model_name": config["model_name"],
+                    "state_dict": model.state_dict(),
+                    "best_val_loss": best_val_loss,
+                    "optimizer": optimizer.state_dict()
+                }, is_best, path=exp_dir)
+            if i_episode == config["num_episodes"]:
+                keep_training = False
+                break
+
+            i_episode += 1
     
     writer.export_scalars_to_json(os.path.join(exp_dir, "metrics.json"))
 

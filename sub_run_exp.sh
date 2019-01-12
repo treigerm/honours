@@ -1,7 +1,8 @@
 #!/bin/sh
 # Grid engine options (lines prefixed with #$)
 #$ -cwd
-#$ -l h_vmem=16GB
+#$ -pe gpu 1
+#$ -l h_vmem=16G
 
 # Initialise the environment modules
 . /etc/profile.d/modules.sh
