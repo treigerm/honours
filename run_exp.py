@@ -73,6 +73,7 @@ def main(config, exp_dir):
                 ))
                 writer.add_scalars("data/losses", {"val_loss": val_loss,
                                                    "train_loss": loss}, i_episode)
+                writer.export_scalars_to_json(os.path.join(exp_dir, "metrics.json"))
 
                 is_best = val_loss < best_val_loss
                 best_val_loss = val_loss if is_best else best_val_loss
@@ -83,13 +84,12 @@ def main(config, exp_dir):
                     "best_val_loss": best_val_loss,
                     "optimizer": optimizer.state_dict()
                 }, is_best, path=exp_dir)
+
             if i_episode == config["num_episodes"]:
                 keep_training = False
                 break
 
             i_episode += 1
-    
-    writer.export_scalars_to_json(os.path.join(exp_dir, "metrics.json"))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
