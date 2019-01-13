@@ -5,7 +5,7 @@ import glob
 import csv
 import argparse
 
-FIELDNAMES = ["relative_path", "label", "patientID"]
+FIELDNAMES = ["relative_path", "label", "case_id", "section_location"]
 
 def find_tiff_files(root_dir, sub_dir, image_dir=None):
     # TODO: Describe directory structure.
@@ -18,6 +18,31 @@ def find_tiff_files(root_dir, sub_dir, image_dir=None):
 
     return glob.glob("{}/*/*.tiff".format(sub_path))
 
+def get_metadata(file_path):
+    """
+    Filepath of the form: 
+        /path/to/TCGA-19-1789-01A-01-BS1.7ce4575c-8bd4-4129-9623-1eb584e7bcff.svs
+    
+    The first twelve characters indicate the case ID. For the given filepath the 
+    case ID would be 'TCGA-19-1789'.
+
+    The 21th character indicates whether the section location is top or bottom.
+    For this filepath it would 'B' so bottom.
+    """
+    metadata = {}
+    file_name = os.path.basename(file_path)
+
+    metadata["case_id"] = file_name[:12]
+
+    if file_name[20] == "B":
+        metadata["section_location"] = "BOTTOM"
+    elif file_name[20] == "T":
+        metadata["section_location"] = "TOP"
+    else:
+        metadata["section_location"] = "UNKNOWN"
+
+    return metadata
+
 def main(root_dir, 
          csv_filename, 
          survival_dir=None, 
@@ -29,10 +54,12 @@ def main(root_dir,
 
         for label, sub_dir in [(0, non_survival_dir), (1, survival_dir)]:
             for file_path in find_tiff_files(root_dir, sub_dir, image_dir):
+                meta = get_metadata(file_path)
                 row = {
                     "relative_path": file_path,
                     "label": label,
-                    "patientID": "None"
+                    "case_id": meta["case_id"],
+                    "section_location": meta["section_location"]
                 }
                 writer.writerow(row)
 
