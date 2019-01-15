@@ -66,7 +66,8 @@ class TCGAGBMDataset(Dataset):
                       y_sub_slide:(y_sub_slide + ITEM_HEIGHT)]
 
         label = self.slides_frame.iloc[slide_idx, 1]
-        sample = {"slide": slide, "label": label}
+        case_id = self.slides_frame.iloc[slide_idx, 2] 
+        sample = {"slide": slide, "label": label, "case_id": case_id}
 
         if self.transform:
             sample = self.transform(sample)
@@ -84,6 +85,6 @@ class ToTensor(object):
 
         # Transforms image data from shape (W, H, C) to (C, W, H) and from 
         # range (0, 255) to (0, 1).
-        slide = torchvision.transforms.functional.to_tensor(slide)
-        label = torch.tensor(label).float()
-        return {"slide": slide, "label": label}
+        sample["slide"] = torchvision.transforms.functional.to_tensor(slide)
+        sample["label"] = torch.tensor(label).float()
+        return sample

@@ -35,8 +35,6 @@ def main(config, exp_dir):
     dataset = CrossValDataset(
         config["data_csv"], 
         config["data_dir"], 
-        config["train_size"], 
-        config["val_size"], 
         transform=ToTensor(device)
     )
     train_loader = torch.utils.data.DataLoader(
