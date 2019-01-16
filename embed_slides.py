@@ -3,11 +3,7 @@ import os
 import torch
 import argparse
 import pickle
-import itertools
-import pandas as pd
-import numpy as np
-import torchvision
-from PIL import Image
+import tqdm
 from collections import defaultdict
 
 from models.cae import CAE, TestCAE
@@ -38,22 +34,26 @@ def main(model_name, checkpoint_path, root_dir, data_csv, batch_size,
     }
 
     for name, data_split in data_splits.items():
-        train_loader = torch.utils.data.DataLoader(
+        data_loader = torch.utils.data.DataLoader(
             data_split, batch_size=batch_size, shuffle=False, 
             num_workers=num_load_workers
         )
 
         embeddings = defaultdict(list)
         with torch.no_grad():
-            for batch in train_loader:
-                slides = batch["slide"].to(device)
+            with tqdm.tqdm(total=data_loader) as pbar:
+                pbar.set_description("{}".format(name))
+                for batch in data_loader:
+                    slides = batch["slide"].to(device)
 
-                embedding = model(slides)
-                embedding = embedding.numpy()
+                    embedding = model.encoder(slides)
+                    embedding = embedding.cpu().numpy()
 
-                for i in range(len(batch)):
-                    case_id = slides["case_id"][i]
-                    embeddings[case_id].append(embedding[i])
+                    for i in range(len(batch)):
+                        case_id = batch["case_id"][i]
+                        embeddings[case_id].append(embedding[i])
+
+                    pbr.update(1)
         
         out_file_name = split_file_name(name, out_file)
         with open(out_file_name, "w+") as f:
