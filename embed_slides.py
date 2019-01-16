@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import os
 import torch
 import argparse
@@ -43,15 +44,16 @@ def main(model_name, checkpoint_path, root_dir, data_csv, batch_size,
         )
 
         embeddings = defaultdict(list)
-        for batch in train_loader:
-            slides = batch["slide"].to(device)
+        with torch.no_grad():
+            for batch in train_loader:
+                slides = batch["slide"].to(device)
 
-            embedding = model(slides)
-            embedding = embedding.numpy()
+                embedding = model(slides)
+                embedding = embedding.numpy()
 
-            for i in range(len(batch)):
-                case_id = slides["case_id"][i]
-                embeddings[case_id].append(embedding[i])
+                for i in range(len(batch)):
+                    case_id = slides["case_id"][i]
+                    embeddings[case_id].append(embedding[i])
         
         out_file_name = split_file_name(name, out_file)
         with open(out_file_name, "w+") as f:
@@ -63,7 +65,7 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint-path", type=str)
     parser.add_argument("--root-dir", type=str)
     parser.add_argument("--data-csv", type=str)
-    parser.add_argument("--batch-size", type=str)
+    parser.add_argument("--batch-size", type=int)
     parser.add_argument("--out-file", type=str)
     parser.add_argument("--use-gpu", type=bool)
     parser.add_argument("--num-load-workers", type=int, default=4)

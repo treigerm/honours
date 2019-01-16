@@ -16,7 +16,7 @@ class CrossValDataset(object):
     
     def get_frames(self, csv_file):
         csv_dir = os.path.dirname(csv_file)
-        csv_name = os.path.basename(csv_dir)
+        csv_name = os.path.basename(csv_file)
         frames = []
         for split in ["train", "val", "test"]:
             file_name = os.path.join(csv_dir, "{}_{}".format(split, csv_name))

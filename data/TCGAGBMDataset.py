@@ -16,7 +16,7 @@ ITEM_HEIGHT = 128
 class TCGAGBMDataset(Dataset):
     """TCGA GBM dataset.
 
-    Read CSV file of the form (relative_path_to_image, label, patientID).
+    Read CSV file of the form (relative_path_to_image, label, case_id).
     """
     # TODO: Describe folder structure.
     # TODO: Describe tiling structure.

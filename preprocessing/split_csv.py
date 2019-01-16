@@ -27,7 +27,7 @@ def main(train_size, val_size, slides_metadata_file, out_file):
     for split_name, cases in splits:
         out = "{}_{}".format(split_name, out_basename)
         out = os.path.join(out_dir, out)
-        slides_metadata[slides_metadata["case_id"].isin(cases)].to_csv(out)
+        slides_metadata[slides_metadata["case_id"].isin(cases)].to_csv(out, index=False)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
