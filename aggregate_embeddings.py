@@ -16,14 +16,19 @@ def aggregate_embeddings(embeddings):
     return {"mean": mean, "std": std, "median": median}
 
 def main(embeddings_file, out_file):
-    with open(embeddings_file, "r") as f:
-        embeddings = pickle.load(f) # embeddings: {slide_id: [embeddings]}
+    with open(embeddings_file, "rb") as f:
+        # dataset: {split_name: {case_id: [(relative_path, embeddings)]}}
+        dataset = pickle.load(f) 
     
-    for case_id, case_embeddings in embeddings.items():
-        embeddings[case_id] = aggregate_embeddings(case_embeddings)
+    for name, embeddings in dataset.items():
+        for case_id, case_embeddings in embeddings.items():
+            # case_embeddings: [(relative_path, embeddings)]
+            case_embeddings = map(lambda x: x[1], case_embeddings)
+            embeddings[case_id] = aggregate_embeddings(case_embeddings)
+        dataset[name] = embeddings
     
-    with open(out_file, "w+") as f:
-        pickle.dump(embeddings, f)
+    with open(out_file, "wb+") as f:
+        pickle.dump(dataset, f)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

@@ -2,10 +2,12 @@ import os
 import pandas as pd # TODO: Replace with csv.
 import itertools
 import numpy as np
+from scipy import ndimage
 import torch
 from PIL import Image
 from torch.utils.data import Dataset
 import torchvision
+import torchvision.transforms.functional as TF
 
 SLIDE_WIDTH = 1000
 SLIDE_HEIGHT = 1000
@@ -67,7 +69,12 @@ class TCGAGBMDataset(Dataset):
 
         label = self.slides_frame.iloc[slide_idx, 1]
         case_id = self.slides_frame.iloc[slide_idx, 2] 
-        sample = {"slide": slide, "label": label, "case_id": case_id}
+        sample = {
+            "slide": slide, 
+            "label": label, 
+            "case_id": case_id,
+            "relative_path": relative_path
+        }
 
         if self.transform:
             sample = self.transform(sample)
@@ -87,4 +94,18 @@ class ToTensor(object):
         # range (0, 255) to (0, 1).
         sample["slide"] = torchvision.transforms.functional.to_tensor(slide)
         sample["label"] = torch.tensor(label).float()
+        return sample
+
+class RandomRotate(object):
+
+    def __init__(self, degrees):
+        if isinstance(degrees, int):
+            self.degrees = (-degrees, degrees)
+        elif isinstance(degrees, (list, tuple)) and len(degrees) == 2:
+            self.degrees = degrees
+
+    def __call__(self, sample):
+        angle = np.random.uniform(self.degrees[0], self.degrees[1])
+        slide = Image.fromarray(sample["slide"])
+        sample["slide"] = np.array(TF.rotate(slide, angle))
         return sample
