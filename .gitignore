@@ -7,3 +7,6 @@ __pycache__
 
 # Config file
 config.yaml
+
+# Jupyter notebooks
+.ipynb_checkpoints
