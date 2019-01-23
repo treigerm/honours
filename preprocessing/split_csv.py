@@ -7,7 +7,7 @@ import os
 
 RANDOM_SEED = 42
 
-def main(train_size, val_size, slides_metadata_file, out_file):
+def main(train_size, val_size, slides_metadata_file, out_file, section_location):
     slides_metadata = pd.read_csv(slides_metadata_file)
     cases = slides_metadata["case_id"].unique()
 
@@ -27,7 +27,10 @@ def main(train_size, val_size, slides_metadata_file, out_file):
     for split_name, cases in splits:
         out = "{}_{}".format(split_name, out_basename)
         out = os.path.join(out_dir, out)
-        slides_metadata[slides_metadata["case_id"].isin(cases)].to_csv(out, index=False)
+        mask = slides_metadata["case_id"].isin(cases)
+        if section_location is not None:
+            mask = mask & (slides_metadata["section_location"] == section_location)
+        slides_metadata[mask].to_csv(out, index=False)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -35,5 +38,6 @@ if __name__ == "__main__":
     parser.add_argument("--val-size", type=float)
     parser.add_argument("--slides-metadata-file", type=str)
     parser.add_argument("--out-file", type=str)
+    parser.add_argument("--section-location", type=str, default=None)
     args = parser.parse_args()
     main(**vars(args))
