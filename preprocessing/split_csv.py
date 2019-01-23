@@ -5,29 +5,36 @@ import numpy as np
 import argparse
 import os
 
+from sklearn.model_selection import train_test_split
+
 RANDOM_SEED = 42
 
 def main(train_size, val_size, slides_metadata_file, out_file, section_location):
     slides_metadata = pd.read_csv(slides_metadata_file)
-    cases = slides_metadata["case_id"].unique()
+    cases = slides_metadata[["case_id", "label"]].groupby("case_id").agg(lambda x: x.iloc[0])
 
-    num_cases = len(cases)
-    num_train = int(np.floor(train_size * num_cases))
-    num_val = int(np.floor(val_size * num_cases))
-
-    rnd = np.random.RandomState(RANDOM_SEED)
-    rnd.shuffle(cases)
-    train_cases, val_cases, test_cases = np.split(
-        cases, [num_train, num_train+num_val]
+    train_cases, rest = train_test_split(
+        cases, 
+        train_size=train_size,
+        stratify=cases["label"],
+        random_state=RANDOM_SEED
+    )
+    val_relative_size = val_size / (1.0 - train_size)
+    val_cases, test_cases = train_test_split(
+        rest,
+        train_size=val_relative_size,
+        stratify=rest["label"],
+        random_state=RANDOM_SEED
     )
     splits = [("train", train_cases), ("val", val_cases), ("test", test_cases)]
+
 
     out_dir = os.path.dirname(out_file)
     out_basename = os.path.basename(out_file)
     for split_name, cases in splits:
         out = "{}_{}".format(split_name, out_basename)
         out = os.path.join(out_dir, out)
-        mask = slides_metadata["case_id"].isin(cases)
+        mask = slides_metadata["case_id"].isin(cases.index)
         if section_location is not None:
             mask = mask & (slides_metadata["section_location"] == section_location)
         slides_metadata[mask].to_csv(out, index=False)
