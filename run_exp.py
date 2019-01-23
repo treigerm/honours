@@ -7,7 +7,7 @@ import tensorboardX
 import argparse
 import yaml
 
-from data.TCGAGBMDataset import TCGAGBMDataset, RandomRotate, ToTensor
+from data.TCGAGBMDataset import TCGAGBMDataset, ToTensor
 from data.dataset import CrossValDataset
 from models.cae import CAE, TestCAE
 from models.factory import get_model
@@ -36,12 +36,15 @@ def main(config, exp_dir):
     dataset = CrossValDataset(
         config["data_csv"], 
         config["data_dir"], 
-        transform=ToTensor(device)
+        image_transform=torchvision.transforms.RandomCrop(config["input_size"]),
+        sample_transform=ToTensor(device)
     )
     train_dataset = dataset.get_train_set()
-    train_dataset.set_transform(torchvision.transforms.Compose(
-        [RandomRotate(config["rotation_angle"]), ToTensor(device)]
-    ))
+    train_dataset.set_image_transform(torchvision.transforms.Compose([
+         torchvision.transforms.RandomCrop(config["input_size"]),
+         torchvision.transforms.RandomRotation(config["rotation_angle"])
+    ]))
+
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=config["batch_size"], shuffle=True,
         num_workers=4)

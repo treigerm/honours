@@ -8,6 +8,7 @@ learning_rate: 0.0005
 weight_decay: 0.00001
 num_episodes: 100000
 rotation_angle: 5    # Angle for data augmentation.
+input_size: 128
 
 eval_steps: 20
 

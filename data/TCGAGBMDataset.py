@@ -22,7 +22,9 @@ class TCGAGBMDataset(Dataset):
     # TODO: Describe folder structure.
     # TODO: Describe tiling structure.
 
-    def __init__(self, data_frame, root_dir, transform=None):
+    def __init__(self, data_frame, root_dir, 
+                 image_transform=None,
+                 sample_transform=None):
         """
         Args:
             data_frame (pandas.DataFrame)
@@ -30,47 +32,26 @@ class TCGAGBMDataset(Dataset):
         """
         self.slides_frame = data_frame
         self.root_dir = root_dir
-        self.transform = transform
+        self.image_transform = image_transform
+        self.sample_transform = sample_transform
 
-        self.sub_slides = list(itertools.product(
-            self.item_indexes(SLIDE_WIDTH, ITEM_WIDTH),
-            self.item_indexes(SLIDE_HEIGHT, ITEM_HEIGHT)
-        ))
-    
-    @staticmethod
-    def item_indexes(item_length, step_size):
-        # TODO: Put function into utility module.
-        ixs = []
-        current_ix = 0
-        while True:
-            if current_ix + step_size < item_length:
-                ixs.append(current_ix)
-                current_ix += step_size
-            else:
-                ixs.append(item_length - step_size)
-                break
-        return ixs
-    
-    def set_transform(self, transform):
-        self.transform = transform
+    def set_image_transform(self, transform):
+        self.image_transform = transform
 
     def __len__(self):
-        return len(self.slides_frame) * len(self.sub_slides)
+        return len(self.slides_frame)
     
     def __getitem__(self, idx):
-        slide_idx = int(np.floor(idx / len(self.sub_slides)))
-
-        sub_slide_idx = idx % len(self.sub_slides)
-        x_sub_slide, y_sub_slide = self.sub_slides[sub_slide_idx]
-
-        relative_path = self.slides_frame.iloc[slide_idx, 0]
+        relative_path = self.slides_frame.iloc[idx, 0]
         slide_path = os.path.join(self.root_dir, relative_path)
-        slide = np.array(Image.open(slide_path).convert("RGB"))
-        slide = slide[x_sub_slide:(x_sub_slide + ITEM_WIDTH), 
-                      y_sub_slide:(y_sub_slide + ITEM_HEIGHT)]
+        slide = Image.open(slide_path).convert("RGB")
 
-        label = self.slides_frame.iloc[slide_idx, 1]
-        case_id = self.slides_frame.iloc[slide_idx, 2] 
+        label = self.slides_frame.iloc[idx, 1]
+        case_id = self.slides_frame.iloc[idx, 2] 
+
+        if self.image_transform:
+            slide = self.image_transform(slide)
+
         sample = {
             "slide": slide, 
             "label": label, 
@@ -78,8 +59,8 @@ class TCGAGBMDataset(Dataset):
             "relative_path": relative_path
         }
 
-        if self.transform:
-            sample = self.transform(sample)
+        if self.sample_transform:
+            sample = self.sample_transform(sample)
         
         return sample
 
@@ -96,18 +77,4 @@ class ToTensor(object):
         # range (0, 255) to (0, 1).
         sample["slide"] = torchvision.transforms.functional.to_tensor(slide)
         sample["label"] = torch.tensor(label).float()
-        return sample
-
-class RandomRotate(object):
-
-    def __init__(self, degrees):
-        if isinstance(degrees, int):
-            self.degrees = (-degrees, degrees)
-        elif isinstance(degrees, (list, tuple)) and len(degrees) == 2:
-            self.degrees = degrees
-
-    def __call__(self, sample):
-        angle = np.random.uniform(self.degrees[0], self.degrees[1])
-        slide = Image.fromarray(sample["slide"])
-        sample["slide"] = np.array(TF.rotate(slide, angle))
         return sample

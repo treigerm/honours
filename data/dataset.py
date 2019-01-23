@@ -7,12 +7,12 @@ RANDOM_SEED = 42
 
 class CrossValDataset(object):
 
-    def __init__(self, csv_file, root_dir,  transform=None):
+    def __init__(self, csv_file, *args,  **kwargs):
         train_frame, val_frame, test_frame = self.get_frames(csv_file)
 
-        self.train_split = TCGAGBMDataset(train_frame, root_dir, transform)
-        self.val_split = TCGAGBMDataset(val_frame, root_dir, transform)
-        self.test_split = TCGAGBMDataset(test_frame, root_dir, transform)
+        self.train_split = TCGAGBMDataset(train_frame, *args, **kwargs)
+        self.val_split = TCGAGBMDataset(val_frame, *args, **kwargs)
+        self.test_split = TCGAGBMDataset(test_frame, *args, **kwargs)
     
     def get_frames(self, csv_file):
         csv_dir = os.path.dirname(csv_file)
