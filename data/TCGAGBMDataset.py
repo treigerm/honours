@@ -2,7 +2,6 @@ import os
 import pandas as pd # TODO: Replace with csv.
 import itertools
 import numpy as np
-from scipy import ndimage
 import torch
 from PIL import Image
 from torch.utils.data import Dataset
@@ -51,6 +50,9 @@ class TCGAGBMDataset(Dataset):
                 ixs.append(item_length - step_size)
                 break
         return ixs
+    
+    def set_transform(self, transform):
+        self.transform = transform
 
     def __len__(self):
         return len(self.slides_frame) * len(self.sub_slides)

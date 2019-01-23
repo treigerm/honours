@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 
-import torch
 import os
+import torch
+import torchvision
 import tensorboardX
 import argparse
 import yaml
 
-from data.TCGAGBMDataset import TCGAGBMDataset, ToTensor
+from data.TCGAGBMDataset import TCGAGBMDataset, RandomRotate, ToTensor
 from data.dataset import CrossValDataset
 from models.cae import CAE, TestCAE
 from models.factory import get_model
@@ -37,8 +38,12 @@ def main(config, exp_dir):
         config["data_dir"], 
         transform=ToTensor(device)
     )
+    train_dataset = dataset.get_train_set()
+    train_dataset.set_transform(torchvision.transforms.Compose(
+        [RandomRotate(config["rotation_angle"]), ToTensor(device)]
+    ))
     train_loader = torch.utils.data.DataLoader(
-        dataset.get_train_set(), batch_size=config["batch_size"], shuffle=True,
+        train_dataset, batch_size=config["batch_size"], shuffle=True,
         num_workers=4)
     val_loader = torch.utils.data.DataLoader(
         dataset.get_val_set(), batch_size=config["test_batch_size"], 

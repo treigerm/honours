@@ -7,10 +7,8 @@ test_batch_size: 100
 learning_rate: 0.0005
 weight_decay: 0.00001
 num_episodes: 100000
+rotation_angle: 5    # Angle for data augmentation.
 
-# Cross validation
-train_size: 0.7
-val_size: 0.2
 eval_steps: 20
 
 # Environment configuration
