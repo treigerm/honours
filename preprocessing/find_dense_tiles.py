@@ -21,7 +21,7 @@ def non_white_density(image):
 def is_dense_tile(image):
     """
     Args:
-        image: np.array (tile_size, tile_size, channels)
+        image: np.array
     """
     c1_dens = np.mean(image[:,:,0])
     c2_dens = np.mean(image[:,:,1])
