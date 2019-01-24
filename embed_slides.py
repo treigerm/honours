@@ -71,8 +71,8 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint-path", type=str)
     parser.add_argument("--root-dir", type=str)
     parser.add_argument("--data-csv", type=str)
-    parser.add_argument("--batch-size", type=int)
-    parser.add_argument("--num-samples", type=int, 
+    parser.add_argument("--batch-size", type=int, default=500)
+    parser.add_argument("--num-samples", type=int, default=100
         help="Number of samples from each 1000x1000 tile.")
     parser.add_argument("--out-file", type=str)
     parser.add_argument("--use-gpu", type=bool)

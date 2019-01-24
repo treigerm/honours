@@ -49,8 +49,11 @@ def main(config, exp_dir):
         train_dataset, batch_size=config["batch_size"], shuffle=True,
         num_workers=4)
     val_loader = torch.utils.data.DataLoader(
-        dataset.get_val_set(), batch_size=config["test_batch_size"], 
-        shuffle=True, num_workers=4)
+        dataset.get_val_set(), 
+        batch_size=config["eval_batch_size"], 
+        sampler=torch.utils.data.RandomSampler(dataset.get_val_set(), replacement=True,
+                                               num_samples=config["num_eval_samples"]), 
+        num_workers=4)
 
     model = get_model(config["model_name"]).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"],
