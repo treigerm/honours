@@ -42,22 +42,22 @@ def main(model_name, checkpoint_path, root_dir, data_csv, batch_size,
 
         embeddings = defaultdict(list)
         with torch.no_grad():
-            with tqdm.tqdm(total=len(data_loader)) as pbar:
+            with tqdm.tqdm(total=num_samples*len(data_loader)) as pbar:
                 pbar.set_description("{}".format(name))
-                for i in range(num_samples):
+                for _ in range(num_samples):
                     for batch in data_loader:
                         slides = batch["slide"].to(device)
 
                         embedding = model.encoder(slides)
                         embedding = embedding.cpu().numpy()
 
-                        for i in range(len(batch)):
+                        for i in range(len(batch["case_id"])):
                             case_id = batch["case_id"][i]
                             relative_path = batch["relative_path"][i]
                             embeddings[case_id].append(
                                 (relative_path, embedding[i])
                             )
-
+                        pbar.set_description("Patients {}".format(len(embeddings)))
                         pbar.update(1)
         
         results[name] = embeddings
@@ -72,7 +72,7 @@ if __name__ == "__main__":
     parser.add_argument("--root-dir", type=str)
     parser.add_argument("--data-csv", type=str)
     parser.add_argument("--batch-size", type=int, default=500)
-    parser.add_argument("--num-samples", type=int, default=100
+    parser.add_argument("--num-samples", type=int, default=100,
         help="Number of samples from each 1000x1000 tile.")
     parser.add_argument("--out-file", type=str)
     parser.add_argument("--use-gpu", type=bool)
