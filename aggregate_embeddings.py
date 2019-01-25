@@ -23,7 +23,7 @@ def main(embeddings_file, out_file):
     for name, embeddings in dataset.items():
         for case_id, case_embeddings in embeddings.items():
             # case_embeddings: [(relative_path, embeddings)]
-            case_embeddings = map(lambda x: x[1], case_embeddings)
+            case_embeddings = np.array([x[1] for x in case_embeddings])
             embeddings[case_id] = aggregate_embeddings(case_embeddings)
         dataset[name] = embeddings
     
