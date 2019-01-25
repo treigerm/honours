@@ -12,10 +12,12 @@ from models.factory import get_model
 from data.TCGAGBMDataset import TCGAGBMDataset, ToTensor
 from data.dataset import CrossValDataset
 
+RANDOM_SEED = 42
 INPUT_SIZE = 128
 
 def main(model_name, checkpoint_path, root_dir, data_csv, batch_size, 
          num_samples, out_file, use_gpu, num_load_workers):
+    torch.manual_seed(RANDOM_SEED)
     device = torch.device("cuda" if use_gpu else "cpu")
     model = get_model(model_name).to(device).eval()
     checkpoint = torch.load(checkpoint_path)
