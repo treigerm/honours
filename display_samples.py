@@ -32,14 +32,14 @@ def save_images(images, out_file=None):
     plt.savefig(out_file)
 
 
-def main(root_dir, data_csv, checkpoint_path, model_name, use_gpu, out_file):
+def main(root_dir, data_csv, checkpoint_path, use_gpu, out_file):
     torch.manual_seed(RANDOM_SEED)
     np.random.seed(RANDOM_SEED)
     random.seed(RANDOM_SEED)
 
     device = torch.device("cuda" if use_gpu else "cpu")
-    model = get_model(model_name).to(device).eval()
     checkpoint = torch.load(checkpoint_path)
+    model = get_model(checkpoint["model_name"]).to(device).eval()
     model.load_state_dict(checkpoint["state_dict"])
 
     dataset = CrossValDataset(
@@ -65,7 +65,6 @@ def main(root_dir, data_csv, checkpoint_path, model_name, use_gpu, out_file):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model-name", type=str)
     parser.add_argument("--checkpoint-path", type=str)
     parser.add_argument("--root-dir", type=str)
     parser.add_argument("--data-csv", type=str)
