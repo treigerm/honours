@@ -38,7 +38,7 @@ def main(root_dir, data_csv, checkpoint_path, use_gpu, out_file):
     random.seed(RANDOM_SEED)
 
     device = torch.device("cuda" if use_gpu else "cpu")
-    checkpoint = torch.load(checkpoint_path)
+    checkpoint = torch.load(checkpoint_path, map_location=device)
     model = get_model(checkpoint["model_name"]).to(device).eval()
     model.load_state_dict(checkpoint["state_dict"])
 
