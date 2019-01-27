@@ -16,7 +16,7 @@ def main(slides_metadata_file, num_samples, root_dir, dest_dir, dry_run):
         if dry_run:
             print("cp {} {}".format(full_path, dest_dir))
         else:
-            shutil.copy(full_path, dest_path)
+            shutil.copy(full_path, dest_dir)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

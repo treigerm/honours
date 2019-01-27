@@ -5,6 +5,8 @@ import torchvision
 import argparse
 import pickle
 import tqdm
+import numpy as np
+import random
 from collections import defaultdict
 
 from models.cae import CAE, TestCAE
@@ -18,6 +20,9 @@ INPUT_SIZE = 128
 def main(model_name, checkpoint_path, root_dir, data_csv, batch_size, 
          num_samples, out_file, use_gpu, num_load_workers):
     torch.manual_seed(RANDOM_SEED)
+    np.random.seed(RANDOM_SEED)
+    random.seed(RANDOM_SEED)
+
     device = torch.device("cuda" if use_gpu else "cpu")
     model = get_model(model_name).to(device).eval()
     checkpoint = torch.load(checkpoint_path)
@@ -77,7 +82,7 @@ if __name__ == "__main__":
     parser.add_argument("--num-samples", type=int, default=100,
         help="Number of samples from each 1000x1000 tile.")
     parser.add_argument("--out-file", type=str)
-    parser.add_argument("--use-gpu", type=bool)
+    parser.add_argument("--use-gpu", action="store_true")
     parser.add_argument("--num-load-workers", type=int, default=4)
     args = parser.parse_args()
     main(**vars(args))

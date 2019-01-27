@@ -8,6 +8,8 @@ import argparse
 import yaml
 import pickle
 import time
+import numpy as np
+import random
 
 from data.TCGAGBMDataset import TCGAGBMDataset, ToTensor
 from data.dataset import CrossValDataset
@@ -30,6 +32,8 @@ def test(model, device, loss_fn, test_loader):
 
 def main(config, exp_dir, checkpoint=None):
     torch.manual_seed(config["random_seed"])
+    np.random.seed(RANDOM_SEED)
+    random.seed(RANDOM_SEED)
 
     logger = Logger(exp_dir)
 
