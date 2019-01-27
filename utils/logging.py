@@ -36,3 +36,12 @@ class AverageMeter(object):
         self.sum += val * n
         self.count += n
         self.avg = self.sum / self.count
+
+class Logger(object):
+
+    def __init__(self, log_dir, log_name="log.txt"):
+        self.logfile = open(os.path.join(log_dir, log_name), "w+")
+    
+    def log(self, msg):
+        print(msg)
+        print(msg, file=self.logfile)
