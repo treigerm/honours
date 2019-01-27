@@ -13,12 +13,7 @@ from data.TCGAGBMDataset import TCGAGBMDataset, ToTensor
 from data.dataset import CrossValDataset
 from models.cae import CAE, TestCAE
 from models.factory import get_model
-from utils.logging import make_exp_dir, save_checkpoint, AverageMeter, Logger
-
-def save_metrics(metrics, exp_dir):
-    out_file = os.path.join(exp_dir, "metrics.pickle")
-    with open(out_file, "wb+") as f:
-        pickle.dump(metrics, f)
+from utils.logging import make_exp_dir, save_checkpoint, AverageMeter, Logger, save_metrics, load_metrics
 
 def test(model, device, loss_fn, test_loader):
     model.eval()
@@ -33,7 +28,7 @@ def test(model, device, loss_fn, test_loader):
     return test_loss / batches
 
 
-def main(config, exp_dir):
+def main(config, exp_dir, checkpoint=None):
     torch.manual_seed(config["random_seed"])
 
     logger = Logger(exp_dir)
@@ -71,13 +66,22 @@ def main(config, exp_dir):
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, "min")
     loss_fn = torch.nn.MSELoss()
 
-    metrics = {"val_loss": [], "train_loss": []}
+    if checkpoint:
+        logger.log("Resume training..")
+        metrics = load_metrics(exp_dir)
+        best_val_loss = checkpoint["best_val_loss"]
+        i_episode = checkpoint["epoch"]
+        model.load_state_dict(checkpoint["state_dict"])
+        optimizer.load_state_dict(checkpoint["optimizer"])
+    else: 
+        i_episode = 1
+        metrics = {"val_loss": [], "train_loss": []}
+        best_val_loss = float("inf")
+
     batch_time = AverageMeter()
     train_losses = AverageMeter()
     val_losses = AverageMeter()
-    best_val_loss = float("inf")
 
-    i_episode = 1
     keep_training = True
     while keep_training:
         for batch in train_loader:
@@ -145,9 +149,15 @@ if __name__ == "__main__":
         for k, v in config.items():
             print("{}: {}".format(k, v))
 
-    exp_dir = make_exp_dir(config["logging_dir"], config["exp_name"])
+
+    if "resume" in config:
+        checkpoint = torch.load(config["resume"])
+        exp_dir = os.path.dirname(config["resume"])
+    else:
+        checkpoint = None
+        exp_dir = make_exp_dir(config["logging_dir"], config["exp_name"])
 
     with open(os.path.join(exp_dir, "config.yaml"), "w+") as f:
         yaml.dump(config, f, default_flow_style=False)
 
-    main(config, exp_dir)
+    main(config, exp_dir, checkpoint=checkpoint)

@@ -1,7 +1,18 @@
 import os
+import pickle
 import datetime
 import torch
 import shutil
+
+def save_metrics(metrics, exp_dir):
+    out_file = os.path.join(exp_dir, "metrics.pickle")
+    with open(out_file, "wb+") as f:
+        pickle.dump(metrics, f)
+
+def load_metrics(exp_dir):
+    in_file = os.path.join(exp_dir, "metrics.pickle")
+    with open(in_file, "rb") as f:
+        return pickle.load(f)
 
 def make_exp_dir(log_dir, exp_name):
     exp_dir_name = "{}_{}".format(
@@ -40,7 +51,7 @@ class AverageMeter(object):
 class Logger(object):
 
     def __init__(self, log_dir, log_name="log.txt"):
-        self.logfile = open(os.path.join(log_dir, log_name), "w+")
+        self.logfile = open(os.path.join(log_dir, log_name), "a")
     
     def log(self, msg):
         print(msg)
