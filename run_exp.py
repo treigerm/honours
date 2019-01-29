@@ -32,8 +32,8 @@ def test(model, device, loss_fn, test_loader):
 
 def main(config, exp_dir, checkpoint=None):
     torch.manual_seed(config["random_seed"])
-    np.random.seed(RANDOM_SEED)
-    random.seed(RANDOM_SEED)
+    np.random.seed(config["random_seed"])
+    random.seed(config["random_seed"])
 
     logger = Logger(exp_dir)
 
