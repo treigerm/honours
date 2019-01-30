@@ -56,3 +56,4 @@ class Logger(object):
     def log(self, msg):
         print(msg)
         print(msg, file=self.logfile)
+        self.logfile.flush()

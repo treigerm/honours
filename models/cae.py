@@ -95,7 +95,7 @@ class CAE(nn.Module):
 
         mean_0 = torch.mean(h[y == 0], dim=0)
         mean_1 = torch.mean(h[y == 1], dim=0)
-        return mse(x_reconstructed, x) + mse(mean_0, mean_1)
+        return mse(x_reconstructed, x) - mse(mean_0, mean_1)
 
 @register_model("test_cae")
 class TestCAE(nn.Module):
@@ -147,4 +147,4 @@ class TestCAE(nn.Module):
 
         mean_0 = torch.mean(h[y == 0], dim=0)
         mean_1 = torch.mean(h[y == 1], dim=0)
-        return mse(x_reconstructed, x) + mse(mean_0, mean_1)
+        return mse(x_reconstructed, x) - mse(mean_0, mean_1)
