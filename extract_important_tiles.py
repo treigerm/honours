@@ -23,7 +23,7 @@ def update_top_images(slides, scores, top, k=10):
     top_ixs = np.argpartition(scores, k)[-k:]
     top_scores = zip(top_ixs, scores[top_ixs])
     for ix, score in top_scores:
-        if len(top) < k or score > top[0]:
+        if len(top) < k or score > top[0][0]:
             if len(top) == k:
                 heapq.heappop(top)
             
