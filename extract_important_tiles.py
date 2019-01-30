@@ -43,13 +43,13 @@ def save_images(images, k, out_file=None):
     
     plt.savefig(out_file)
 
-def main(importances_file, use_gpu, checkpoint_path, data_csv, root_dir, 
+def main(coef_file, use_gpu, checkpoint_path, data_csv, root_dir, 
          batch_size, num_load_workers, out_file):
     torch.manual_seed(RANDOM_SEED)
     np.random.seed(RANDOM_SEED)
     random.seed(RANDOM_SEED)
 
-    with open(importances_file, "rb") as f:
+    with open(coef_file, "rb") as f:
         coef = pickle.load(f)
         feature_importances = coef["feature_importances"]
 
@@ -73,6 +73,7 @@ def main(importances_file, use_gpu, checkpoint_path, data_csv, root_dir,
 
     top_ten_images = []
 
+    print("Embedding images..")
     with torch.no_grad():
         for batch in data_loader:
             slides = batch["slide"]
@@ -92,5 +93,13 @@ def main(importances_file, use_gpu, checkpoint_path, data_csv, root_dir,
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--coef-file", type=str)
+    parser.add_argument("--checkpoint-path", type=str)
+    parser.add_argument("--root-dir", type=str)
+    parser.add_argument("--data-csv", type=str)
+    parser.add_argument("--use-gpu", action="store_true")
+    parser.add_argument("--out-file", default="important_tiles.png")
+    parser.add_argument("--batch-size", type=int, default=500)
+    parser.add_argument("--num-load-workers", type=int, default=4)
     args = parser.parse_args()
     main(**vars(args))
