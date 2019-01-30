@@ -24,7 +24,7 @@ def test(model, device, loss_fn, test_loader):
     with torch.no_grad():
         for batch in test_loader:
             slides = batch["slide"].to(device)
-            test_loss += loss_fn(model(slides), slides)
+            test_loss += loss_fn(model(slides), slides).item()
             batches += 1
     
     return test_loss / batches
@@ -96,7 +96,7 @@ def main(config, exp_dir, checkpoint=None):
             optimizer.zero_grad()
 
             loss = loss_fn(model(slides), slides)
-            train_losses.update(loss)
+            train_losses.update(loss.item())
             metrics["train_loss"].append(train_losses.val)
 
             loss.backward()
