@@ -17,14 +17,15 @@ from models.cae import CAE, TestCAE
 from models.factory import get_model
 from utils.logging import make_exp_dir, save_checkpoint, AverageMeter, Logger, save_metrics, load_metrics
 
-def test(model, device, loss_fn, test_loader):
+def test(model, device, test_loader):
     model.eval()
     test_loss = 0
     batches = 0
     with torch.no_grad():
         for batch in test_loader:
-            slides = batch["slide"].to(device)
-            test_loss += loss_fn(model(slides), slides).item()
+            batch["slide"] = batch["slide"].to(device)
+            batch["label"] = batch["label"].to(device)
+            test_loss += model.loss(batch["slide"], batch["label"]).item()
             batches += 1
     
     return test_loss / batches
@@ -64,11 +65,11 @@ def main(config, exp_dir, checkpoint=None):
                                                num_samples=config["num_eval_samples"]), 
         num_workers=4)
 
-    model = get_model(config["model_name"]).to(device)
+    model = get_model(config["model_name"], **config["model_args"]).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"],
                                  weight_decay=config["weight_decay"])
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, "min")
-    loss_fn = torch.nn.MSELoss()
+    #loss_fn = torch.nn.MSELoss()
 
     if checkpoint:
         logger.log("Resume training..")
@@ -90,12 +91,14 @@ def main(config, exp_dir, checkpoint=None):
     while keep_training:
         for batch in train_loader:
             start = time.time()
-            slides = batch["slide"].to(device)
+            batch["slide"] = batch["slide"].to(device)
+            batch["label"] = batch["label"].to(device)
 
             model.train()
             optimizer.zero_grad()
 
-            loss = loss_fn(model(slides), slides)
+            #loss = loss_fn(model(slides), slides)
+            loss = model.loss(batch["slide"], batch["label"])
             train_losses.update(loss.item())
             metrics["train_loss"].append(train_losses.val)
 
@@ -104,7 +107,7 @@ def main(config, exp_dir, checkpoint=None):
             batch_time.update(time.time() - start)
 
             if i_episode % config["eval_steps"] == 0:
-                val_loss = test(model, device, loss_fn, val_loader)
+                val_loss = test(model, device, val_loader)
                 scheduler.step(val_loss)
                 val_losses.update(val_loss)
 
@@ -155,7 +158,8 @@ if __name__ == "__main__":
 
 
     if "resume" in config:
-        checkpoint = torch.load(config["resume"])
+        device = "cuda" if config["use_gpu"] else "cpu"
+        checkpoint = torch.load(config["resume"], map_location=device)
         exp_dir = os.path.dirname(config["resume"])
     else:
         checkpoint = None

@@ -1,6 +1,10 @@
+import torch
 from torch import nn
 
 from .factory import register_model
+
+MSE_LOSS = "mse"
+INTER_LOSS = "inter_class_mse"
 
 class Flatten(nn.Module):
 
@@ -21,11 +25,13 @@ class CAE(nn.Module):
     CAE modelled after https://github.com/daniel-munro/imageCCA/blob/master/CAE/CAE_GTEx.py.
     """
 
-    def __init__(self):
+    def __init__(self, loss_name=MSE_LOSS):
         super(CAE, self).__init__()
         self.kernel_size = 5
         self.pool_size = 2
         self.hidden_dims = 1024
+
+        self.loss_name = loss_name
 
         # Use padding 2 to keep the input output dimensions the same.
         self.encoder = nn.Sequential(                        # In:  (b, 3, 128, 128)
@@ -71,17 +77,38 @@ class CAE(nn.Module):
     
     def forward(self, x):
         return self.decoder(self.encoder(x))
+    
+    def loss(self, x, y):
+        if self.loss_name == MSE_LOSS:
+            mse = nn.MSELoss()
+            return mse(self.forward(x), x)
+        elif self.loss_name == INTER_LOSS:
+            return self.inter_loss(x, y)
+    
+    def inter_loss(self, x, y):
+        mse = nn.MSELoss()
+        h = self.encoder(x)
+        x_reconstructed = self.decoder(h)
+        if torch.sum(y == 1) == 0 or torch.sum(y == 0) == 0:
+            # If the batch only contains one class return normal mse loss.
+            return mse(x_reconstructed, x)
+
+        mean_0 = torch.mean(h[y == 0], dim=0)
+        mean_1 = torch.mean(h[y == 1], dim=0)
+        return mse(x_reconstructed, x) + mse(mean_0, mean_1)
 
 @register_model("test_cae")
 class TestCAE(nn.Module):
     """Small CAE model used for testing."""
 
-    def __init__(self):
+    def __init__(self, loss_name=MSE_LOSS):
         super(TestCAE, self).__init__()
         self.kernel_size = 4
         self.stride = 4
         self.pool_size = 4
         self.hidden_dims = 16
+
+        self.loss_name = loss_name
 
         self.encoder = nn.Sequential(                              # In: (b, 3, 128, 128)
             nn.Conv2d(3, 8, self.kernel_size, stride=self.stride), # Out: (b, 8, 32, 32)
@@ -101,3 +128,23 @@ class TestCAE(nn.Module):
     
     def forward(self, x):
         return self.decoder(self.encoder(x))
+    
+    def loss(self, x, y):
+        if self.loss_name == MSE_LOSS:
+            mse = nn.MSELoss()
+            return mse(self.forward(x), x)
+        elif self.loss_name == INTER_LOSS:
+            return self.inter_loss(x, y)
+    
+    def inter_loss(self, x, y):
+        y.requires_grad_(False)
+        mse = nn.MSELoss()
+        h = self.encoder(x)
+        x_reconstructed = self.decoder(h)
+        if torch.sum(y == 1) == 0 or torch.sum(y == 0) == 0:
+            # If the batch only contains one class return normal mse loss.
+            return mse(x_reconstructed, x)
+
+        mean_0 = torch.mean(h[y == 0], dim=0)
+        mean_1 = torch.mean(h[y == 1], dim=0)
+        return mse(x_reconstructed, x) + mse(mean_0, mean_1)
