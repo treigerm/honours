@@ -25,11 +25,11 @@ class CAE(nn.Module):
     CAE modelled after https://github.com/daniel-munro/imageCCA/blob/master/CAE/CAE_GTEx.py.
     """
 
-    def __init__(self, loss_name=MSE_LOSS):
+    def __init__(self, hidden_dims=1024, loss_name=MSE_LOSS):
         super(CAE, self).__init__()
         self.kernel_size = 5
         self.pool_size = 2
-        self.hidden_dims = 1024
+        self.hidden_dims = hidden_dims
 
         self.loss_name = loss_name
 

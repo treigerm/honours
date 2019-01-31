@@ -134,6 +134,7 @@ def main(config, exp_dir, checkpoint=None):
                 save_checkpoint({
                     "epoch": i_episode,
                     "model_name": config["model_name"],
+                    "model_args": config["model_args"],
                     "state_dict": model.state_dict(),
                     "best_val_loss": best_val_loss,
                     "optimizer": optimizer.state_dict()
