@@ -31,6 +31,12 @@ def save_checkpoint(state, is_best, path=".", filename="checkpoint.pth.tar"):
         best_file = os.path.join(path, "model_best.pth.tar")
         shutil.copyfile(filepath, best_file)
 
+def load_checkpoint(checkpoint_path, device, get_model):
+    checkpoint = torch.load(checkpoint_path, map_location=device)
+    model = get_model(checkpoint["model_name"], **checkpoint["model_args"]).to(device)
+    model.load_state_dict(checkpoint["state_dict"])
+    return model, checkpoint
+
 class AverageMeter(object):
     """Computes and stores the average and current value"""
     def __init__(self):
