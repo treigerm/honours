@@ -18,16 +18,13 @@ from utils.logging import load_checkpoint
 RANDOM_SEED = 42
 INPUT_SIZE = 128
 
-def main(model_name, checkpoint_path, root_dir, data_csv, batch_size, 
+def main(checkpoint_path, root_dir, data_csv, batch_size, 
          num_samples, out_file, use_gpu, num_load_workers):
     torch.manual_seed(RANDOM_SEED)
     np.random.seed(RANDOM_SEED)
     random.seed(RANDOM_SEED)
 
     device = torch.device("cuda" if use_gpu else "cpu")
-    #model = get_model(model_name).to(device).eval()
-    #checkpoint = torch.load(checkpoint_path)
-    #model.load_state_dict(checkpoint["state_dict"])
     model, _ = load_checkpoint(checkpoint_path, device, get_model)
     model.eval()
 
@@ -77,14 +74,15 @@ def main(model_name, checkpoint_path, root_dir, data_csv, batch_size,
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model-name", type=str)
-    parser.add_argument("--checkpoint-path", type=str)
-    parser.add_argument("--root-dir", type=str)
-    parser.add_argument("--data-csv", type=str)
+    parser.add_argument("--checkpoint-path", type=str, default="model_best.pth.tar")
+    parser.add_argument("--root-dir", type=str, 
+        default="/exports/igmm/eddie/batada-lab/timreichlet")
+    parser.add_argument("--data-csv", type=str, 
+        default="/exports/igmm/eddie/batada-lab/timreichlet/metadata/all_non_background/metadata_top.csv")
     parser.add_argument("--batch-size", type=int, default=500)
-    parser.add_argument("--num-samples", type=int, default=100,
+    parser.add_argument("--num-samples", type=int, default=10,
         help="Number of samples from each 1000x1000 tile.")
-    parser.add_argument("--out-file", type=str)
+    parser.add_argument("--out-file", type=str, default="embeddings.pickle")
     parser.add_argument("--use-gpu", action="store_true")
     parser.add_argument("--num-load-workers", type=int, default=4)
     args = parser.parse_args()

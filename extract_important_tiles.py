@@ -15,6 +15,7 @@ from models.cae import CAE, TestCAE
 from models.factory import get_model
 from data.TCGAGBMDataset import TCGAGBMDataset, ToTensor
 from data.dataset import CrossValDataset
+from utils.logging import load_checkpoint
 
 RANDOM_SEED = 42
 INPUT_SIZE = 128
@@ -54,9 +55,8 @@ def main(coef_file, use_gpu, checkpoint_path, data_csv, root_dir,
         feature_importances = coef["feature_importances"]
 
     device = torch.device("cuda" if use_gpu else "cpu")
-    checkpoint = torch.load(checkpoint_path, map_location=device)
-    model = get_model(checkpoint["model_name"]).to(device).eval()
-    model.load_state_dict(checkpoint["state_dict"])
+    model, _ = load_checkpoint(checkpoint_path, device, get_model)
+    model.eval()
 
     dataset = CrossValDataset(
         data_csv, root_dir, 
