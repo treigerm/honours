@@ -5,6 +5,7 @@ from .factory import register_model
 
 MSE_LOSS = "mse"
 INTER_LOSS = "inter_class_mse"
+INTER_INTRA_LOSS = "inter_intra_loss"
 
 class Flatten(nn.Module):
 
@@ -84,6 +85,8 @@ class CAE(nn.Module):
             return mse(self.forward(x), x)
         elif self.loss_name == INTER_LOSS:
             return self.inter_loss(x, y)
+        elif self.loss_name == INTER_INTRA_LOSS:
+            return self.inter_intra_loss(x, y)
     
     def inter_loss(self, x, y):
         mse = nn.MSELoss()
@@ -96,6 +99,23 @@ class CAE(nn.Module):
         mean_0 = torch.mean(h[y == 0], dim=0)
         mean_1 = torch.mean(h[y == 1], dim=0)
         return mse(x_reconstructed, x) - mse(mean_0, mean_1)
+    
+    def inter_intra_loss(self, x, y):
+        mse = nn.MSELoss()
+        h = self.encoder(x)
+        x_reconstructed = self.decoder(h)
+        if torch.sum(y == 1) == 0 or torch.sum(y == 0) == 0:
+            # If the batch only contains one class return normal mse loss.
+            return mse(x_reconstructed, x)
+        
+        h_0 = h[y == 0] # (b_0, hidden_dims)
+        h_1 = h[y == 1] # (b_1, hidden_dims)
+        mean_0 = torch.mean(h_0, dim=0) # (hidden_dims,)
+        mean_1 = torch.mean(h_1, dim=0) # (hidden_dims,)
+
+        intra_0 = (mean_0.unsqueeze(0).repeat(h_0.shape[0], 1) - h_0).norm(2, dim=0)
+        intra_1 = (mean_1.unsqueeze(0).repeat(h_1.shape[0], 1) - h_1).norm(2, dim=0)
+        return mse(x_reconstructed, x) - mse(mean_0, mean_1) + intra_0.mean() + intra_1.mean()
 
 @register_model("test_cae")
 class TestCAE(nn.Module):
@@ -135,6 +155,8 @@ class TestCAE(nn.Module):
             return mse(self.forward(x), x)
         elif self.loss_name == INTER_LOSS:
             return self.inter_loss(x, y)
+        elif self.loss_name == INTER_INTRA_LOSS:
+            return self.inter_intra_loss(x, y)
     
     def inter_loss(self, x, y):
         y.requires_grad_(False)
@@ -148,3 +170,20 @@ class TestCAE(nn.Module):
         mean_0 = torch.mean(h[y == 0], dim=0)
         mean_1 = torch.mean(h[y == 1], dim=0)
         return mse(x_reconstructed, x) - mse(mean_0, mean_1)
+    
+    def inter_intra_loss(self, x, y):
+        mse = nn.MSELoss()
+        h = self.encoder(x)
+        x_reconstructed = self.decoder(h)
+        if torch.sum(y == 1) == 0 or torch.sum(y == 0) == 0:
+            # If the batch only contains one class return normal mse loss.
+            return mse(x_reconstructed, x)
+        
+        h_0 = h[y == 0] # (b_0, hidden_dims)
+        h_1 = h[y == 1] # (b_1, hidden_dims)
+        mean_0 = torch.mean(h_0, dim=0) # (hidden_dims,)
+        mean_1 = torch.mean(h_1, dim=0) # (hidden_dims,)
+
+        intra_0 = (mean_0.unsqueeze(0).repeat(h_0.shape[0], 1) - h_0).norm(2, dim=0)
+        intra_1 = (mean_1.unsqueeze(0).repeat(h_1.shape[0], 1) - h_1).norm(2, dim=0)
+        return mse(x_reconstructed, x) - mse(mean_0, mean_1) + intra_0.mean() + intra_1.mean()

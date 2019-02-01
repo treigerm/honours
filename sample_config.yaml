@@ -3,7 +3,7 @@ exp_name: "test_exp"
 # Hyperparameters
 model_name: "test_cae"
 model_args:
-  loss_name: "mse" # mse, inter_class_mse
+  loss_name: "mse" # mse, inter_class_mse, inter_intra_loss
 batch_size: 4
 eval_batch_size: 100
 learning_rate: 0.0005
