@@ -10,3 +10,6 @@ config.yaml
 
 # Jupyter notebooks
 .ipynb_checkpoints
+
+# Ignore images
+*.png
