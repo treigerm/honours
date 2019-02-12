@@ -4,7 +4,7 @@ import random
 
 CASE_INDEX = 2 # Column index of case ID in metadata table.
 
-def save_pop(l, k):
+def safe_pop(l, k):
     """Pops min(len(l), k) elements from l.
     """
     samples = []
@@ -51,9 +51,10 @@ class CaseSampler(torch.utils.data.Sampler):
         ix_samples = []
         while len(cases) > 0:
             num_cases = min(self.cases_per_batch, len(cases))
+            # TODO: Sample based on case
             batch_cases = random.sample(cases.keys(), num_cases)
             for c in batch_cases:
-                ix_samples += save_pop(cases[c], self.patches_per_case)
+                ix_samples += safe_pop(cases[c], self.patches_per_case)
                 if len(cases[c]) == 0:
                     cases.pop(c, None)
                 

@@ -17,6 +17,17 @@ from models.cae import CAE, TestCAE
 from models.factory import get_model
 from utils.logging import make_exp_dir, save_checkpoint, AverageMeter, Logger, save_metrics, load_metrics
 
+
+def get_targets(labels, case_ids, cases_order):
+    """Get the right label for each case in cases_order."""
+    targets = torch.zeros(len(cases_order))
+    cases_ids = list(case_ids)
+    for i, case in enumerate(cases_order):
+        targets[i] = labels[cases_ids.index(case)]
+    
+    return targets
+
+
 def test(model, device, test_loader):
     model.eval()
     test_loss = 0
@@ -69,7 +80,8 @@ def main(config, exp_dir, checkpoint=None):
     optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"],
                                  weight_decay=config["weight_decay"])
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, "min")
-    #loss_fn = torch.nn.MSELoss()
+    #criterion = torch.nn.MSELoss()
+    criterion = torch.nn.NLLLoss()
 
     if checkpoint:
         logger.log("Resume training..")
@@ -83,6 +95,7 @@ def main(config, exp_dir, checkpoint=None):
         metrics = {"val_loss": [], "train_loss": []}
         best_val_loss = float("inf")
 
+    # TODO: Track accuracy.
     batch_time = AverageMeter()
     train_losses = AverageMeter()
     val_losses = AverageMeter()
@@ -92,13 +105,19 @@ def main(config, exp_dir, checkpoint=None):
         for batch in train_loader:
             start = time.time()
             batch["slide"] = batch["slide"].to(device)
-            batch["label"] = batch["label"].to(device)
 
             model.train()
             optimizer.zero_grad()
 
-            #loss = loss_fn(model(slides), slides)
-            loss = model.loss(batch["slide"], batch["label"])
+            if config["model_name"] in ["cae", "test_cae"]:
+                #loss = criterion(model(slides), slides)
+                batch["label"] = batch["label"].to(device)
+                loss = model.loss(batch["slide"], batch["label"])
+            elif config["model_name"] == "mil_classifier":
+                log_y_prob, cases = model(batch["slide"], batch["case_id"])
+                target = get_targets(batch["label"], batch["case_id"], cases)
+                loss = criterion(log_y_prob, target.to(device))
+
             train_losses.update(loss.item())
             metrics["train_loss"].append(train_losses.val)
 

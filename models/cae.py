@@ -2,23 +2,11 @@ import torch
 from torch import nn
 
 from .factory import register_model
+from .utils import Flatten, Reshape
 
 MSE_LOSS = "mse"
 INTER_LOSS = "inter_class_mse"
 INTER_INTRA_LOSS = "inter_intra_loss"
-
-class Flatten(nn.Module):
-
-    def forward(self, input):
-        return input.view(input.size(0), -1)
-
-class Reshape(nn.Module):
-    def __init__(self, *args):
-        super(Reshape, self).__init__()
-        self.shape = args
-
-    def forward(self, x):
-        return x.view(self.shape)
 
 @register_model("cae")
 class CAE(nn.Module):
