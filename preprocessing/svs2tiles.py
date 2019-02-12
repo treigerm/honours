@@ -6,15 +6,47 @@ import argparse
 import sys
 import os
 import itertools
+import tqdm
 
 SERIES = 0
 OUTTYPE = "tiff"
+
+WHITE_THRESHOLD = 230
+BLACK_THRESHOLD = 20
 
 def touch(fname, times=None):
     with open(fname, 'a'):
         os.utime(fname, times)
 
-def is_dense_tile(image, location, tiles_info):
+def non_white_percentage(image, threshold=0.90):
+    img_arr = np.array(image.convert("L"))
+    non_white_perc = np.sum(img_arr < WHITE_THRESHOLD) / img_arr.size
+    return non_white_perc > threshold
+
+def non_black_percentage(image, threshold=0.90):
+    img_arr = np.array(image.convert("L"))
+    non_black_perc = np.sum(img_arr > BLACK_THRESHOLD) / img_arr.size
+    return non_black_perc > threshold
+
+def non_black_and_non_white(image, white_thres=0.9, black_thres=0.9):
+    return non_black_percentage(image, black_thres) and non_white_percentage(image, white_thres)
+
+def mean_rgb(image, threshold=180):
+    gray_dens = np.mean(image.convert("L"))
+    return gray_dens < threshold
+
+def super_combo(image):
+    return non_black_and_non_white(image) or \
+        (mean_rgb(image) and non_black_and_non_white(image, white_thres=0.6))
+
+DENSE_CRITERION = {
+    "non_white_percentage": non_white_percentage,
+    "non_black_and_non_white": non_black_and_non_white,
+    "mean_rgb": mean_rgb, 
+    "super_combo": super_combo
+}
+
+def is_dense_tile(image, location, tiles_info, criterion="super_combo"):
     """
     Args:
         image: PIL.image
@@ -26,9 +58,8 @@ def is_dense_tile(image, location, tiles_info):
     elif location in tiles_info["non-dense"]:
         return False
 
-    if image is not None:
-        gray_dens = np.mean(image.convert("L"))
-    if gray_dens < 180:
+    is_dense = lambda img: DENSE_CRITERION[criterion](img)
+    if is_dense(image):
         tiles_info["dense"].add(location)
         return True
     else:
@@ -73,7 +104,7 @@ def make_indixes(tilesize, length):
             break
     return ixs
 
-def main(infile, tilesize, identifier):
+def main(infile, tilesize, identifier, use_pbar=False, check_neighbours=False):
     output_prefix = os.path.splitext(infile)[0]
     donefile = "{}.done".format(output_prefix)
     if os.path.isfile(donefile):
@@ -89,7 +120,8 @@ def main(infile, tilesize, identifier):
         "dense": set(),
         "non-dense": set()
     }
-    for x_loc, y_loc in ixs:
+    pbar = lambda x: tqdm.tqdm(x) if use_pbar else x
+    for x_loc, y_loc in pbar(ixs):
         location = (x_loc, y_loc)
         if location in tiles_info["non-dense"]:
             continue
@@ -97,9 +129,10 @@ def main(infile, tilesize, identifier):
         if not is_dense_tile(tile, location, tiles_info):
             continue
 
-        neighbours = get_neighbours(location, tilesize, ixs)
-        if not all_neighbours_dense(neighbours, slide, tilesize, tiles_info):
-            continue
+        if check_neighbours:
+            neighbours = get_neighbours(location, tilesize, ixs)
+            if not all_neighbours_dense(neighbours, slide, tilesize, tiles_info):
+                continue
         
         if identifier is None:
             outfile = "{prefix}_{x_loc}_{y_loc}_{tsize}x{tsize}.{type}".format(
@@ -122,6 +155,10 @@ if __name__ == "__main__":
     parser.add_argument("--infile", help="Name of the input .svs file.")
     parser.add_argument("--tilesize", help="Size of the tiles. All tiles are square.",
                         type=int)
-    parser.add_argument("--identifier")
+    parser.add_argument("--identifier", help="ID string to add to output files")
+    parser.add_argument("--use-pbar", action="store_true", 
+                        help="If selected display progress bar")
+    parser.add_argument("--check-neighbours", action="store_true",
+                        help="If selected only selects tile as dense if left, right, upper and lower tile are also dense")
     args = parser.parse_args()
     main(**vars(args))

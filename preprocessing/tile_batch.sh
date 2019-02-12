@@ -17,7 +17,7 @@ fi
 
 for FILE in ${IMAGEDIR}/*.svs; do
     ${SCRIPTSDIR}/svs2tiles.py --tilesize ${TILESIZE} --infile ${FILE} \
-    --identifier "test"
+    --identifier "non_black_and_non_white_0.9_neighbours" --check-neighbours
 done
 
 touch ${DONEFILE}
