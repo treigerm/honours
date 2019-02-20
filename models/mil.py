@@ -5,14 +5,20 @@ import numpy as np
 from .factory import register_model
 from .utils import Flatten
 
+def mean(x):
+    return torch.mean(x, dim=0)
+
 @register_model("mil_classifier")
 class MultipleInstanceLearningClassifier(nn.Module):
 
-    def __init__(self, hidden_dims=1024):
+    def __init__(self, hidden_dims=1024, aggregation_type="mean",
+                 att_hidden_dims=128):
         super(MultipleInstanceLearningClassifier, self).__init__()
         self.kernel_size = 5
         self.pool_size = 2
         self.hidden_dims = hidden_dims
+        self.att_hidden_dims = att_hidden_dims
+        self.aggregation_type = aggregation_type
 
         # Use padding 2 to keep the input output dimensions the same.
         self.encoder = nn.Sequential(                        # In:  (b, 3, 128, 128)
@@ -35,12 +41,32 @@ class MultipleInstanceLearningClassifier(nn.Module):
             nn.Linear(128*4*4, self.hidden_dims)             # Out: (b, self.hidden_dims)
         )
 
-        self.aggregator = lambda x: torch.mean(x, dim=0)
+        if self.aggregation_type == "attention":
+            self.attention = nn.Sequential(
+                nn.Linear(self.hidden_dims, self.att_hidden_dims),
+                nn.Tanh(),
+                nn.Linear(self.att_hidden_dims, 1)
+            )
+
+        self.aggregator = self.get_aggregator()
 
         self.classifier = nn.Sequential(
             nn.Linear(self.hidden_dims, 1),
             nn.Sigmoid()
         )
+    
+    def get_aggregator(self):
+        if self.aggregation_type == "mean":
+            return mean
+        elif self.aggregation_type == "attention":
+            def att_aggr(x):
+                att = self.attention(x)
+                att = torch.transpose(att, 1, 0)
+                att = nn.functional.softmax(att, dim=1)
+                return torch.mm(att, x)
+            return att_aggr
+        else:
+            raise ValueError("Unkown aggregation type {}.".format(self.aggregation_type))
     
     def forward(self, data, case_ids):
         """
