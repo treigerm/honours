@@ -39,14 +39,18 @@ def super_combo(image):
     return non_black_and_non_white(image) or \
         (mean_rgb(image) and non_black_and_non_white(image, white_thres=0.6))
 
+def mean_rgb_non_black(image):
+    return mean_rgb(image) and non_black_percentage(image)
+
 DENSE_CRITERION = {
     "non_white_percentage": non_white_percentage,
     "non_black_and_non_white": non_black_and_non_white,
     "mean_rgb": mean_rgb, 
+    "mean_rgb_non_black": mean_rgb_non_black, 
     "super_combo": super_combo
 }
 
-def is_dense_tile(image, location, tiles_info, criterion="super_combo"):
+def is_dense_tile(image, location, tiles_info, criterion="mean_rgb_non_black"):
     """
     Args:
         image: PIL.image
