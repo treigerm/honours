@@ -39,7 +39,7 @@ class MultipleInstanceLearningClassifier(nn.Module):
 
         self.classifier = nn.Sequential(
             nn.Linear(self.hidden_dims, 1),
-            nn.LogSigmoid() # Use log sigmoid for numerical accuracy.
+            nn.Sigmoid()
         )
     
     def forward(self, data, case_ids):
@@ -48,10 +48,18 @@ class MultipleInstanceLearningClassifier(nn.Module):
         """
         embeddings = self.encoder(data) # Out: (batch_size, self.hidden_dims)
         embeddings, cases = self.aggregate(embeddings, case_ids) # Out: (num_cases, self.hidden_dims)
-        log_y_prob = self.classifier(embeddings) # Out: (num_cases,)
-        return log_y_prob, cases
+        y_prob = self.classifier(embeddings) # Out: (num_cases,)
+        return y_prob, cases
     
     def aggregate(self, embeddings, case_ids):
+        """Aggregate embeddings so that we end up with one embeddings for each cases.
+        Args:
+            embeddings: torch.Tensor of shape (batch_size, self.hidden_dims)
+            case_ids: List of length batch_size
+        Out:
+            torch.Tensor of shape (num_cases, self.hidden_dims)
+        """
+        case_ids = np.array(case_ids)
         cases = np.unique(case_ids)
         # TODO: Bring to right device.
         aggr_embeddings = torch.zeros(len(cases), self.hidden_dims)
