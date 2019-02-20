@@ -8,12 +8,15 @@ from torch.utils.data import Dataset
 import torchvision
 import torchvision.transforms.functional as TF
 
+from .factory import register_dataset
+
 SLIDE_WIDTH = 1000
 SLIDE_HEIGHT = 1000
 
 ITEM_WIDTH = 128
 ITEM_HEIGHT = 128
 
+@register_dataset("TCGAGBMDataset")
 class TCGAGBMDataset(Dataset):
     """TCGA GBM dataset.
 

@@ -5,10 +5,13 @@ import numpy as np
 from PIL import Image, ImageEnhance
 from torch.utils.data import Dataset
 
+from .factory import register_dataset
+
 IMAGE_SIZE = (1000, 1000)
 PATCH_SIZE = 128
 STRIDE = PATCH_SIZE
 
+@register_dataset("PatchWiseDataset")
 class PatchWiseDataset(Dataset):
     """
     Based on: https://github.com/ImagingLab/ICIAR2018/blob/master/src/datasets.py

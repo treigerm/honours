@@ -16,6 +16,7 @@ eval_steps: 20
 num_eval_samples: 1000
 
 # Environment configuration
+dataset_name: "TCGAGBMDataset" # TCGAGBMDataset, PatchWiseDataset
 data_dir: "/Users/Tim/data/tcga_luad/gdc_download_20181013_213421.982108"
 data_csv: "/Users/Tim/data/tcga_luad/gdc_download_20181013_213421.982108/tile_locations.csv"
 
