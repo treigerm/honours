@@ -7,7 +7,7 @@ from torch.utils.data import Dataset
 
 from .factory import register_dataset
 
-IMAGE_SIZE = (1000, 1000)
+IMAGE_SIZE = (512, 512)
 PATCH_SIZE = 128
 STRIDE = PATCH_SIZE
 

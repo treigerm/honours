@@ -29,12 +29,19 @@ class CaseSampler(torch.utils.data.Sampler):
     object with a specific batch size. The resulting batches will each have 
     cases_per_batch cases and for each cases patches_per_case patches."""
 
-    def __init__(self, data_source, slides_frame, cases_per_batch, patches_per_case):
+    def __init__(self, 
+                 data_source, 
+                 slides_frame, 
+                 cases_per_batch, 
+                 patches_per_case,
+                 num_samples=None):
         self.data_source = data_source
         self.slides_frame = slides_frame
         self.cases_per_batch = cases_per_batch
         self.patches_per_case = patches_per_case
+        self.num_samples = num_samples
         self.batch_size = cases_per_batch * patches_per_case
+
     
     def __iter__(self):
         # Create a dictionary {case_id: [index]} so the indexes are 
@@ -58,6 +65,9 @@ class CaseSampler(torch.utils.data.Sampler):
                 if len(cases[c]) == 0:
                     cases.pop(c, None)
                 
+        if self.num_samples is not None:
+            return iter(ix_samples[:self.num_samples])
+
         return iter(ix_samples)
 
     def __len__(self):
