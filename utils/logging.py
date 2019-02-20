@@ -7,12 +7,14 @@ import shutil
 def save_metrics(metrics, exp_dir):
     out_file = os.path.join(exp_dir, "metrics.pickle")
     with open(out_file, "wb+") as f:
+        metrics = {k: meter.values for k, meter in metrics.items()}
         pickle.dump(metrics, f)
 
 def load_metrics(exp_dir):
     in_file = os.path.join(exp_dir, "metrics.pickle")
     with open(in_file, "rb") as f:
-        return pickle.load(f)
+        metrics = pickle.load(f)
+        return {k: AverageMeter(v) for k, v in metrics.items()}
 
 def make_exp_dir(log_dir, exp_name):
     exp_dir_name = "{}_{}".format(
@@ -39,20 +41,25 @@ def load_checkpoint(checkpoint_path, device, get_model):
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
-    def __init__(self):
+    def __init__(self, values=None):
         self.reset()
+        if values is not None:
+            for v in values:
+                self.update(v)
 
     def reset(self):
         self.val = 0
         self.avg = 0
         self.sum = 0
         self.count = 0
+        self.values = []
 
     def update(self, val, n=1):
         self.val = val
         self.sum += val * n
         self.count += n
         self.avg = self.sum / self.count
+        self.values.append(val)
 
 class Logger(object):
 
