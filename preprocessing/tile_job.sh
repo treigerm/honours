@@ -22,7 +22,7 @@ SCRIPTSDIR="/home/s1547426/dev/honours/preprocessing"
 
 DATADIR="$1"
 NUM_CORES=16
-TILESIZE=1000
+TILESIZE=512
 
 find $DATADIR -mindepth 1 -maxdepth 1 -type d | \
     parallel -j $NUM_CORES ${SCRIPTSDIR}/tile_batch.sh {} $TILESIZE
