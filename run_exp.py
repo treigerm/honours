@@ -11,9 +11,11 @@ import time
 import numpy as np
 import random
 
-from data.TCGAGBMDataset import TCGAGBMDataset, ToTensor
+from data.TCGAGBMDataset import ToTensor
 from data.dataset import CrossValDataset
+from data.samplers import CaseSampler
 from models.cae import CAE, TestCAE
+from models.mil import MultipleInstanceLearningClassifier
 from models.factory import get_model
 from utils.logging import make_exp_dir, save_checkpoint, AverageMeter, Logger, save_metrics, load_metrics
 
@@ -28,7 +30,72 @@ def get_targets(labels, case_ids, cases_order):
     return targets
 
 
-def test(model, device, test_loader):
+def get_data_loaders(config, device):
+    dataset = CrossValDataset(
+        config["dataset_name"],
+        config["data_csv"], 
+        config["data_dir"], 
+        image_transform=torchvision.transforms.RandomCrop(config["input_size"]),
+        sample_transform=ToTensor(device)
+    )
+    train_dataset = dataset.get_train_set()
+    val_dataset = dataset.get_val_set()
+
+    if config["dataset_name"] == "TCGAGBMDataset":
+        train_dataset.image_transform = torchvision.transforms.Compose([
+            torchvision.transforms.RandomCrop(config["input_size"]),
+            torchvision.transforms.RandomRotation(config["rotation_angle"])
+        ])
+        train_loader = torch.utils.data.DataLoader(
+            train_dataset, batch_size=config["batch_size"], shuffle=True,
+            num_workers=4)
+        val_loader = torch.utils.data.DataLoader(
+            val_dataset, 
+            batch_size=config["eval_batch_size"], 
+            sampler=torch.utils.data.RandomSampler(dataset.get_val_set(), replacement=True,
+                                                num_samples=config["num_eval_samples"]), 
+            num_workers=4)
+    elif config["dataset_name"] == "PatchWiseDataset":
+        cases_per_batch = 2
+        patches_ber_case = 16
+        train_sampler = CaseSampler(
+            train_dataset, train_dataset.slides_frame, cases_per_batch, patches_ber_case
+        )
+        train_loader = torch.utils.data.DataLoader(
+            train_dataset, sampler=train_sampler, batch_size=train_sampler.batch_size, num_workers=4
+        )
+
+        eval_cases_per_batch = 4
+        eval_patches_per_case = 32
+        val_sampler = CaseSampler(
+            val_dataset, 
+            val_dataset.slides_frame, 
+            eval_cases_per_batch, 
+            eval_patches_per_case,
+            num_samples=config["num_eval_samples"]
+        )
+        val_loader = torch.utils.data.DataLoader(
+            dataset.get_val_set(), 
+            batch_size=val_sampler.batch_size, 
+            sampler=val_sampler, 
+            num_workers=4)
+    
+    return train_loader, val_loader
+
+
+def compute_loss(config, model, batch, device):
+    criterion = torch.nn.BCELoss()
+    if config["model_name"] in ["cae", "test_cae"]:
+        batch["label"] = batch["label"].to(device)
+        loss = model.loss(batch["slide"], batch["label"])
+    elif config["model_name"] == "mil_classifier":
+        y_prob, cases = model(batch["slide"], batch["case_id"])
+        target = get_targets(batch["label"], batch["case_id"], cases)
+        loss = criterion(y_prob, target.to(device=device))
+    
+    return loss
+
+def test(config, model, device, test_loader):
     model.eval()
     test_loss = 0
     batches = 0
@@ -36,7 +103,7 @@ def test(model, device, test_loader):
         for batch in test_loader:
             batch["slide"] = batch["slide"].to(device)
             batch["label"] = batch["label"].to(device)
-            test_loss += model.loss(batch["slide"], batch["label"]).item()
+            test_loss += compute_loss(config, model, batch, device).item()
             batches += 1
     
     return test_loss / batches
@@ -54,34 +121,12 @@ def main(config, exp_dir, checkpoint=None):
     writer = tensorboardX.SummaryWriter(os.path.join(config["tensorboard_dir"], 
                                                      os.path.basename(exp_dir)))
 
-    dataset = CrossValDataset(
-        config["data_csv"], 
-        config["data_dir"], 
-        image_transform=torchvision.transforms.RandomCrop(config["input_size"]),
-        sample_transform=ToTensor(device)
-    )
-    train_dataset = dataset.get_train_set()
-    train_dataset.set_image_transform(torchvision.transforms.Compose([
-         torchvision.transforms.RandomCrop(config["input_size"]),
-         torchvision.transforms.RandomRotation(config["rotation_angle"])
-    ]))
-
-    train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=config["batch_size"], shuffle=True,
-        num_workers=4)
-    val_loader = torch.utils.data.DataLoader(
-        dataset.get_val_set(), 
-        batch_size=config["eval_batch_size"], 
-        sampler=torch.utils.data.RandomSampler(dataset.get_val_set(), replacement=True,
-                                               num_samples=config["num_eval_samples"]), 
-        num_workers=4)
+    train_loader, val_loader = get_data_loaders(config, device)
 
     model = get_model(config["model_name"], **config["model_args"]).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"],
                                  weight_decay=config["weight_decay"])
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, "min")
-    #criterion = torch.nn.MSELoss()
-    criterion = torch.nn.NLLLoss()
 
     if checkpoint:
         logger.log("Resume training..")
@@ -109,14 +154,7 @@ def main(config, exp_dir, checkpoint=None):
             model.train()
             optimizer.zero_grad()
 
-            if config["model_name"] in ["cae", "test_cae"]:
-                #loss = criterion(model(slides), slides)
-                batch["label"] = batch["label"].to(device)
-                loss = model.loss(batch["slide"], batch["label"])
-            elif config["model_name"] == "mil_classifier":
-                log_y_prob, cases = model(batch["slide"], batch["case_id"])
-                target = get_targets(batch["label"], batch["case_id"], cases)
-                loss = criterion(log_y_prob, target.to(device))
+            loss = compute_loss(config, model, batch, device)
 
             train_losses.update(loss.item())
             metrics["train_loss"].append(train_losses.val)
@@ -126,7 +164,7 @@ def main(config, exp_dir, checkpoint=None):
             batch_time.update(time.time() - start)
 
             if i_episode % config["eval_steps"] == 0:
-                val_loss = test(model, device, val_loader)
+                val_loss = test(config, model, device, val_loader)
                 scheduler.step(val_loss)
                 val_losses.update(val_loss)
 
