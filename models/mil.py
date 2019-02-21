@@ -92,7 +92,7 @@ class MultipleInstanceLearningClassifier(nn.Module):
         aggr_embeddings = torch.zeros(len(cases), self.hidden_dims).to(device)
         for i, case in enumerate(cases):
             # Indexes for the given case.
-            idx = torch.LongTensor(np.argwhere(case_ids == case).flatten())
+            idx = torch.LongTensor(np.argwhere(case_ids == case).flatten()).to(device)
             aggr_embeddings[i] = self.aggregator(embeddings.index_select(0, idx))
         
         return aggr_embeddings, cases
