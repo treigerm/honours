@@ -94,6 +94,7 @@ def compute_loss(config, model, batch, device):
     elif config["model_name"] == "mil_classifier":
         y_prob, cases = model(batch["slide"], batch["case_id"])
         target = get_targets(batch["label"], batch["case_id"], cases)
+        # TODO: Reshape y_prob.
         loss = criterion(y_prob, target.to(device))
         accuracy = calculate_accuracy(y_prob, target.to(device))
     
@@ -148,6 +149,7 @@ def main(config, exp_dir, checkpoint=None):
         best_val_loss = float("inf")
         metrics = {
             "batch_time": AverageMeter(),
+            "val_time": AverageMeter(),
             "train_losses": AverageMeter(),
             "val_losses": AverageMeter(),
             "train_accs": AverageMeter(),
@@ -174,17 +176,21 @@ def main(config, exp_dir, checkpoint=None):
             metrics["batch_time"].update(time.time() - start)
 
             if i_episode % config["eval_steps"] == 0:
+                val_start = time.time()
                 val_loss, val_acc = test(config, model, device, val_loader)
                 scheduler.step(val_loss)
+                metrics["val_time"].update(time.time() - val_start)
                 metrics["val_losses"].update(val_loss)
                 metrics["val_accs"].update(val_acc)
 
                 # Our optimizer has only one parameter group so the first 
                 # element of our list is our learning rate.
                 lr = optimizer.param_groups[0]['lr']
+                # TODO: Print validation time.
                 logger.log(
                     "Episode {0}\t"
                     "Time {metrics[batch_time].val:.3f} ({metrics[batch_time].avg:.3f}) "
+                    "Val time {metrics[val_time].val:.3f} ({metrics[val_time].avg:.3f}) "
                     "Train loss {metrics[train_losses].val:.4e} ({metrics[train_losses].avg:.4e}) "
                     "Train acc {metrics[train_accs].val:.4f} ({metrics[train_accs].avg:.4f}) "
                     "Val loss {metrics[val_losses].val:.4e} ({metrics[val_losses].avg:.4e}) "

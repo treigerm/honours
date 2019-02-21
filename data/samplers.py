@@ -7,10 +7,10 @@ CASE_INDEX = 2 # Column index of case ID in metadata table.
 def safe_pop(l, k):
     """Pops min(len(l), k) elements from l.
     """
-    samples = []
-    while len(l) > 0 and len(samples) < k:
-        samples.append(l.pop(random.randrange(len(l))))
-    return samples
+    num_samples = 0
+    while len(l) > 0 and num_samples < k:
+        num_samples += 1
+        yield l.pop(random.randrange(len(l)))
 
 def make_batch_sampler(data_source, 
                        slides_frame, 
@@ -56,20 +56,23 @@ class CaseSampler(torch.utils.data.Sampler):
                 cases[case_id] = [i]
         
         ix_samples = []
+        num_samples = 0
+        max_samples = float("inf") if self.num_samples is None else self.num_samples
         while len(cases) > 0:
             num_cases = min(self.cases_per_batch, len(cases))
             # TODO: Sample based on case
             batch_cases = random.sample(cases.keys(), num_cases)
             for c in batch_cases:
                 ix_samples += safe_pop(cases[c], self.patches_per_case)
+                for sample in safe_pop(cases[c], self.patches_per_case):
+                    if num_samples >= max_samples:
+                        return
+                    num_samples += 1
+                    yield sample
+
                 if len(cases[c]) == 0:
                     # Remove case if it does not have any tiles left.
                     cases.pop(c, None)
-                if self.num_samples is not None:
-                    if len(ix_samples) >= self.num_samples:
-                        return iter(ix_samples[:self.num_samples])
                 
-        return iter(ix_samples)
-
     def __len__(self):
         return len(self.data_source)
