@@ -63,11 +63,12 @@ class CaseSampler(torch.utils.data.Sampler):
             for c in batch_cases:
                 ix_samples += safe_pop(cases[c], self.patches_per_case)
                 if len(cases[c]) == 0:
+                    # Remove case if it does not have any tiles left.
                     cases.pop(c, None)
+                if self.num_samples is not None:
+                    if len(ix_samples) >= self.num_samples:
+                        return iter(ix_samples[:self.num_samples])
                 
-        if self.num_samples is not None:
-            return iter(ix_samples[:self.num_samples])
-
         return iter(ix_samples)
 
     def __len__(self):
