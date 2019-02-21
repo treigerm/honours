@@ -3,7 +3,6 @@
 import os
 import torch
 import torchvision
-import tensorboardX
 import argparse
 import yaml
 import pickle
@@ -129,9 +128,6 @@ def main(config, exp_dir, checkpoint=None):
 
     device = torch.device("cuda" if config["use_gpu"] else "cpu")
 
-    writer = tensorboardX.SummaryWriter(os.path.join(config["tensorboard_dir"], 
-                                                     os.path.basename(exp_dir)))
-
     train_loader, val_loader = get_data_loaders(config, device)
 
     model = get_model(config["model_name"], **config["model_args"]).to(device)
@@ -197,8 +193,6 @@ def main(config, exp_dir, checkpoint=None):
                     i_episode, lr=lr, metrics=metrics)
                 )
 
-                writer.add_scalars("data/losses", {"val_loss": val_loss,
-                                                   "train_loss": metrics["train_losses"].val}, i_episode)
                 save_metrics(metrics, exp_dir)
 
                 is_best = val_loss < best_val_loss
