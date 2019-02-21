@@ -61,22 +61,21 @@ def get_data_loaders(config, device):
                                                 num_samples=config["num_eval_samples"]), 
             num_workers=4)
     elif config["dataset_name"] == "PatchWiseDataset":
-        cases_per_batch = 2
-        patches_ber_case = 16
         train_sampler = CaseSampler(
-            train_dataset, train_dataset.slides_frame, cases_per_batch, patches_ber_case
+            train_dataset, 
+            train_dataset.slides_frame, 
+            config["cases_per_batch"], 
+            config["patches_per_case"]
         )
         train_loader = torch.utils.data.DataLoader(
             train_dataset, sampler=train_sampler, batch_size=train_sampler.batch_size, num_workers=4
         )
 
-        eval_cases_per_batch = 4
-        eval_patches_per_case = 32
         val_sampler = CaseSampler(
             val_dataset, 
             val_dataset.slides_frame, 
-            eval_cases_per_batch, 
-            eval_patches_per_case,
+            config["eval_cases_per_batch"], 
+            config["eval_patches_per_case"],
             num_samples=config["num_eval_samples"]
         )
         val_loader = torch.utils.data.DataLoader(

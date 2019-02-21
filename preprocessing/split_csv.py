@@ -41,8 +41,8 @@ def main(train_size, val_size, slides_metadata_file, out_file, section_location)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--train-size", type=float)
-    parser.add_argument("--val-size", type=float)
+    parser.add_argument("--train-size", type=float, default=0.6)
+    parser.add_argument("--val-size", type=float, default=0.2)
     parser.add_argument("--slides-metadata-file", type=str)
     parser.add_argument("--out-file", type=str)
     parser.add_argument("--section-location", type=str, default=None)

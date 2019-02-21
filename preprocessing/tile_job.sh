@@ -1,6 +1,6 @@
 #!/bin/sh
 # Grid Engine options (lines prefixed with #$)
-#$ -pe sharedmem 16
+#$ -pe sharedmem 10
 #$ -cwd
 
 # Script to submit a tiling job to the Eddie job scheduler.
@@ -21,7 +21,7 @@ source activate honours
 SCRIPTSDIR="/home/s1547426/dev/honours/preprocessing"
 
 DATADIR="$1"
-NUM_CORES=16
+NUM_CORES=10
 TILESIZE=512
 
 find $DATADIR -mindepth 1 -maxdepth 1 -type d | \
