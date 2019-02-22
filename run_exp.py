@@ -194,6 +194,7 @@ def main(config, exp_dir, checkpoint=None):
             loss.backward()
             optimizer.step()
             metrics["batch_time"].update(time.time() - end)
+            end = time.time()
 
             if i_episode % config["eval_steps"] == 0:
                 val_loss, val_acc = test(config, model, device, val_loader, metrics)
@@ -206,7 +207,7 @@ def main(config, exp_dir, checkpoint=None):
                 lr = optimizer.param_groups[0]['lr']
                 logger.log(
                     "Episode {0}\n"
-                    "Time {metrics[between_eval_time].val:.3f} (data {metrics[data_time].avg:.3f} batch {metrics[batch_time].avg:.3f}) "
+                    "Time {metrics[between_eval_time].val:.3f} (data {metrics[data_time].val:.3f} batch {metrics[batch_time].val:.3f}) "
                     "Train loss {metrics[train_losses].val:.4e} ({metrics[train_losses].avg:.4e}) "
                     "Train acc {metrics[train_accs].val:.4f} ({metrics[train_accs].avg:.4f}) "
                     "Learning rate {lr:.2e}\n"
