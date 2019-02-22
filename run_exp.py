@@ -103,21 +103,30 @@ def compute_loss(config, model, batch, device):
         "accuracy": accuracy
     }
 
-def test(config, model, device, test_loader):
+def test(config, model, device, test_loader, metrics):
     model.eval()
     test_loss = 0
     test_acc = 0
     batches = 0
+    val_start = time.time()
+    end = time.time()
     with torch.no_grad():
         for batch in test_loader:
+            metrics["val_data_time"].update(time.time() - end)
             batch["slide"] = batch["slide"].to(device)
             batch["label"] = batch["label"].to(device)
             scores = compute_loss(config, model, batch, device)
             test_loss += scores["loss"].item()
             test_acc += scores["accuracy"]
             batches += 1
+            metrics["val_batch_time"].update(time.time() - end)
+            end = time.time()
     
-    return test_loss / batches, test_acc / batches
+    val_loss, val_acc = test_loss / batches, test_acc / batches
+    metrics["val_time"].update(time.time() - val_start)
+    metrics["val_losses"].update(val_loss)
+    metrics["val_accs"].update(val_acc)
+    return val_loss, val_acc 
 
 
 def main(config, exp_dir, checkpoint=None):
@@ -153,18 +162,24 @@ def main(config, exp_dir, checkpoint=None):
         i_episode = 1
         best_val_loss = float("inf")
         metrics = {
+            "between_eval_time": AverageMeter(),
+            "data_time": AverageMeter(),
             "batch_time": AverageMeter(),
-            "val_time": AverageMeter(),
             "train_losses": AverageMeter(),
-            "val_losses": AverageMeter(),
             "train_accs": AverageMeter(),
+            "val_time": AverageMeter(),
+            "val_batch_time": AverageMeter(),
+            "val_data_time": AverageMeter(),
+            "val_losses": AverageMeter(),
             "val_accs": AverageMeter()
         }
 
     keep_training = True
+    end = time.time()
+    between_eval_end = time.time()
     while keep_training:
         for batch in train_loader:
-            start = time.time()
+            metrics["data_time"].update(time.time() - end)
             batch["slide"] = batch["slide"].to(device)
 
             model.train()
@@ -178,29 +193,26 @@ def main(config, exp_dir, checkpoint=None):
 
             loss.backward()
             optimizer.step()
-            metrics["batch_time"].update(time.time() - start)
+            metrics["batch_time"].update(time.time() - end)
 
             if i_episode % config["eval_steps"] == 0:
-                val_start = time.time()
-                val_loss, val_acc = test(config, model, device, val_loader)
+                val_loss, val_acc = test(config, model, device, val_loader, metrics)
                 scheduler.step(val_loss)
-                metrics["val_time"].update(time.time() - val_start)
-                metrics["val_losses"].update(val_loss)
-                metrics["val_accs"].update(val_acc)
+
+                metrics["between_eval_time"].update(time.time() - between_eval_end)
 
                 # Our optimizer has only one parameter group so the first 
                 # element of our list is our learning rate.
                 lr = optimizer.param_groups[0]['lr']
-                # TODO: Print validation time.
                 logger.log(
-                    "Episode {0}\t"
-                    "Time {metrics[batch_time].val:.3f} ({metrics[batch_time].avg:.3f}) "
-                    "Val time {metrics[val_time].val:.3f} ({metrics[val_time].avg:.3f}) "
+                    "Episode {0}\n"
+                    "Time {metrics[between_eval_time].val:.3f} (data {metrics[data_time].avg:.3f} batch {metrics[batch_time].avg:.3f}) "
                     "Train loss {metrics[train_losses].val:.4e} ({metrics[train_losses].avg:.4e}) "
                     "Train acc {metrics[train_accs].val:.4f} ({metrics[train_accs].avg:.4f}) "
+                    "Learning rate {lr:.2e}\n"
+                    "Val time {metrics[val_time].val:.3f} (data {metrics[val_data_time].avg:.3f} batch {metrics[val_batch_time].avg:.3f}) "
                     "Val loss {metrics[val_losses].val:.4e} ({metrics[val_losses].avg:.4e}) "
-                    "Val acc {metrics[val_accs].val:.4f} ({metrics[val_accs].avg:.4f}) "
-                    "Learning rate {lr:.2e}".format(
+                    "Val acc {metrics[val_accs].val:.4f} ({metrics[val_accs].avg:.4f}) ".format(
                     i_episode, lr=lr, metrics=metrics)
                 )
 
@@ -217,6 +229,8 @@ def main(config, exp_dir, checkpoint=None):
                     "optimizer": optimizer.state_dict(),
                     "scheduler": scheduler.state_dict()
                 }, is_best, path=exp_dir)
+                end = time.time()
+                between_eval_end = time.time()
 
             if i_episode >= config["num_episodes"]:
                 keep_training = False
