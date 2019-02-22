@@ -16,7 +16,7 @@ from data.samplers import CaseSampler
 from models.cae import CAE, TestCAE
 from models.mil import MultipleInstanceLearningClassifier
 from models.factory import get_model
-from utils.logging import make_exp_dir, save_checkpoint, AverageMeter, Logger, save_metrics, load_metrics
+from utils.logging import make_exp_dir, save_checkpoint, AverageMeter, Logger, save_metrics, load_metrics, load_checkpoint
 
 
 def calculate_accuracy(y_prob, y_true):
@@ -135,6 +135,11 @@ def main(config, exp_dir, checkpoint=None):
     optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"],
                                  weight_decay=config["weight_decay"])
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, "min")
+
+    if "load_encoder" in config:
+        encoder_model, _ = load_checkpoint(
+            config["load_encoder"], device, get_model)
+        model.encoder = encoder_model.encoder
 
     if checkpoint:
         logger.log("Resume training..")
