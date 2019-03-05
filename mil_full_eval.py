@@ -5,6 +5,7 @@ import torch
 import numpy as np
 import random
 import tqdm
+import pickle
 
 from data.TCGAGBMDataset import ToTensor
 from data.dataset import CrossValDataset
@@ -38,7 +39,7 @@ def get_data_loader(data_csv, root_dir, patches_per_case, device):
     )
     
 def main(data_csv, root_dir, batches_per_case, patches_per_case, 
-         checkpoint_path, use_gpu):
+         checkpoint_path, use_gpu, out_file):
     torch.manual_seed(RANDOM_SEED)
     np.random.seed(RANDOM_SEED)
     random.seed(RANDOM_SEED)
@@ -66,7 +67,12 @@ def main(data_csv, root_dir, batches_per_case, patches_per_case,
     print()
     print("Final results:")
     print("Accuracy: {:.2f} %".format(acc * 100))
-    print(y_probs)
+    with open(out_file, "wb") as f:
+        pickle.dump({
+            "Accuracy": acc,
+            "y_probs": y_probs,
+            "y_true": y_true
+        }, f)
 
 
 if __name__ == "__main__":
@@ -76,6 +82,7 @@ if __name__ == "__main__":
     parser.add_argument("--batches-per-case", type=int)
     parser.add_argument("--patches-per-case", type=int)
     parser.add_argument("--checkpoint-path")
+    parser.add_argument("--out-file")
     parser.add_argument("--use-gpu", action="store_true")
     args = parser.parse_args()
     main(**vars(args))
