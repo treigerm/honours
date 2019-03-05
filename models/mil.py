@@ -5,9 +5,6 @@ import numpy as np
 from .factory import register_model
 from .utils import Flatten
 
-def mean(x):
-    return torch.mean(x, dim=0)
-
 @register_model("mil_classifier")
 class MultipleInstanceLearningClassifier(nn.Module):
 
@@ -57,6 +54,8 @@ class MultipleInstanceLearningClassifier(nn.Module):
     
     def get_aggregator(self):
         if self.aggregation_type == "mean":
+            def mean(x):
+                return torch.mean(x, dim=0)
             return mean
         elif self.aggregation_type == "attention":
             def att_aggr(x):

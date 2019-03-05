@@ -39,7 +39,6 @@ def get_data_loaders(config, device):
         config["dataset_name"],
         config["data_csv"], 
         config["data_dir"], 
-        image_transform=torchvision.transforms.RandomCrop(config["input_size"]),
         sample_transform=ToTensor(device)
     )
     train_dataset = dataset.get_train_set()
@@ -50,6 +49,9 @@ def get_data_loaders(config, device):
             torchvision.transforms.RandomCrop(config["input_size"]),
             torchvision.transforms.RandomRotation(config["rotation_angle"])
         ])
+        val_dataset.image_transform = torchvision.transforms.RandomCrop(
+            config["input_size"])
+
         train_loader = torch.utils.data.DataLoader(
             train_dataset, batch_size=config["batch_size"], shuffle=True,
             num_workers=4)
@@ -159,7 +161,7 @@ def main(config, exp_dir, checkpoint=None):
         optimizer.load_state_dict(checkpoint["optimizer"])
         scheduler.load_state_dict(checkpoint["scheduler"])
     else: 
-        i_episode = 1
+        i_episode = 0
         best_val_loss = float("inf")
         metrics = {
             "between_eval_time": AverageMeter(),
