@@ -42,7 +42,6 @@ class CaseSampler(torch.utils.data.Sampler):
         self.num_samples = num_samples
         self.batch_size = cases_per_batch * patches_per_case
 
-    
     def __iter__(self):
         # Create a dictionary {case_id: [index]} so the indexes are 
         # grouped by case ID.
@@ -55,7 +54,7 @@ class CaseSampler(torch.utils.data.Sampler):
             else:
                 cases[case_id] = [i]
         
-        ix_samples = []
+        #ix_samples = []
         num_samples = 0
         max_samples = float("inf") if self.num_samples is None else self.num_samples
         while len(cases) > 0:
@@ -63,7 +62,7 @@ class CaseSampler(torch.utils.data.Sampler):
             # TODO: Sample based on case
             batch_cases = random.sample(cases.keys(), num_cases)
             for c in batch_cases:
-                ix_samples += safe_pop(cases[c], self.patches_per_case)
+                #ix_samples += safe_pop(cases[c], self.patches_per_case)
                 for sample in safe_pop(cases[c], self.patches_per_case):
                     if num_samples >= max_samples:
                         return
@@ -76,3 +75,41 @@ class CaseSampler(torch.utils.data.Sampler):
                 
     def __len__(self):
         return len(self.data_source)
+
+class CaseUniqueSampler(torch.utils.data.Sampler):
+    """Sample each case exactly once"""
+
+    def __init__(self, 
+                 data_source, 
+                 slides_frame, 
+                 patches_per_case,
+                 num_samples=None):
+        self.data_source = data_source
+        self.slides_frame = slides_frame
+        self.patches_per_case = patches_per_case
+        self.num_samples = num_samples
+        self.batch_size = patches_per_case
+
+        # Create a dictionary {case_id: [index]} so the indexes are 
+        # grouped by case ID.
+        self.cases = dict()
+        for i in range(len(self.data_source)):
+            idx, _, _, _, _, _ = np.unravel_index(i, self.data_source.shape)
+            case_id = self.slides_frame.iloc[idx, CASE_INDEX]
+            if case_id in self.cases:
+                self.cases[case_id].append(i)
+            else:
+                self.cases[case_id] = [i]
+
+    def __iter__(self):
+        num_samples = 0
+        max_samples = float("inf") if self.num_samples is None else self.num_samples
+        for case in self.cases.keys():
+            for sample in random.sample(self.cases[case], self.patches_per_case):
+                if num_samples >= max_samples:
+                    return
+                num_samples += 1
+                yield sample
+    
+    def __len__(self):
+        return len(self.cases.keys()) * self.batch_size
