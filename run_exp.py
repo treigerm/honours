@@ -51,17 +51,8 @@ def get_data_loaders(config, device):
         ])
         val_dataset.image_transform = torchvision.transforms.RandomCrop(
             config["input_size"])
-
-        train_loader = torch.utils.data.DataLoader(
-            train_dataset, batch_size=config["batch_size"], shuffle=True,
-            num_workers=4)
-        val_loader = torch.utils.data.DataLoader(
-            val_dataset, 
-            batch_size=config["eval_batch_size"], 
-            sampler=torch.utils.data.RandomSampler(dataset.get_val_set(), replacement=True,
-                                                num_samples=config["num_eval_samples"]), 
-            num_workers=4)
-    elif config["dataset_name"] == "PatchWiseDataset":
+    
+    if "sampler" in config and config["sampler"] == "CaseSampler":
         train_sampler = CaseSampler(
             train_dataset, 
             train_dataset.slides_frame, 
@@ -84,6 +75,16 @@ def get_data_loaders(config, device):
             batch_size=val_sampler.batch_size, 
             sampler=val_sampler, 
             num_workers=4)
+    else:
+        train_loader = torch.utils.data.DataLoader(
+            train_dataset, batch_size=config["batch_size"], shuffle=True,
+            num_workers=4)
+        val_loader = torch.utils.data.DataLoader(
+            val_dataset, 
+            batch_size=config["eval_batch_size"], 
+            sampler=torch.utils.data.RandomSampler(dataset.get_val_set(), replacement=True,
+                                                num_samples=config["num_eval_samples"]), 
+            num_workers=4)
     
     return train_loader, val_loader
 
@@ -93,6 +94,7 @@ def compute_loss(config, model, batch, device):
     if config["model_name"] in ["cae", "test_cae"]:
         batch["label"] = batch["label"].to(device)
         loss = model.loss(batch["slide"], batch["label"])
+        accuracy = -1
     elif config["model_name"] == "mil_classifier":
         y_prob, cases = model(batch["slide"], batch["case_id"])
         target = get_targets(batch["label"], batch["case_id"], cases)
@@ -198,6 +200,7 @@ def main(config, exp_dir, checkpoint=None):
             metrics["batch_time"].update(time.time() - end)
             end = time.time()
 
+            del acc; del loss; del batch
             if i_episode % config["eval_steps"] == 0:
                 val_loss, val_acc = test(config, model, device, val_loader, metrics)
                 scheduler.step(val_loss)
@@ -234,6 +237,7 @@ def main(config, exp_dir, checkpoint=None):
                 }, is_best, path=exp_dir)
                 end = time.time()
                 between_eval_end = time.time()
+                del val_loss; del val_acc
 
             if i_episode >= config["num_episodes"]:
                 keep_training = False
