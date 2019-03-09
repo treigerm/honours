@@ -12,11 +12,15 @@ from collections import defaultdict
 from models.cae import CAE, TestCAE
 from models.factory import get_model
 from data.TCGAGBMDataset import TCGAGBMDataset, ToTensor
+from data.samplers import CaseSampler
 from data.dataset import CrossValDataset
 from utils.logging import load_checkpoint
 
 RANDOM_SEED = 42
 INPUT_SIZE = 128
+
+PATCHES_PER_CASE = 64
+CASES_PER_BATCH = 8
 
 def main(checkpoint_path, root_dir, data_csv, batch_size, 
          num_samples, out_file, use_gpu, num_load_workers):
@@ -29,9 +33,11 @@ def main(checkpoint_path, root_dir, data_csv, batch_size,
     model.eval()
 
     dataset = CrossValDataset(
-        data_csv, root_dir, 
-        image_transform=torchvision.transforms.RandomCrop(INPUT_SIZE),
-        sample_transform=ToTensor(device)
+        "PatchWiseDataset", data_csv, root_dir, 
+        sample_transform=ToTensor(device),
+        rotate=False,
+        flip=False,
+        enhance=False
     )
 
     data_splits = {
@@ -42,30 +48,41 @@ def main(checkpoint_path, root_dir, data_csv, batch_size,
 
     results = {}
     for name, data_split in data_splits.items():
-        data_loader = torch.utils.data.DataLoader(
-            data_split, batch_size=batch_size, shuffle=False, 
-            num_workers=num_load_workers
+        #data_loader = torch.utils.data.DataLoader(
+        #    data_split, batch_size=batch_size, shuffle=False, 
+        #    num_workers=num_load_workers
+        #)
+        sampler = CaseSampler(
+            data_split,
+            data_split.slides_frame,
+            CASES_PER_BATCH,
+            PATCHES_PER_CASE
         )
+        data_loader = torch.utils.data.DataLoader(
+            data_split, 
+            batch_size=sampler.batch_size, 
+            sampler=sampler,
+            num_workers=num_load_workers
+    )
 
         embeddings = defaultdict(list)
         with torch.no_grad():
-            with tqdm.tqdm(total=num_samples*len(data_loader)) as pbar:
+            with tqdm.tqdm(total=len(data_loader)) as pbar:
                 pbar.set_description("{}".format(name))
-                for _ in range(num_samples):
-                    for batch in data_loader:
-                        slides = batch["slide"].to(device)
+                for batch in data_loader:
+                    slides = batch["slide"].to(device)
 
-                        embedding = model.encoder(slides)
-                        embedding = embedding.cpu().numpy()
+                    embedding = model.encoder(slides)
+                    embedding = embedding.cpu().numpy()
 
-                        for i in range(len(batch["case_id"])):
-                            case_id = batch["case_id"][i]
-                            relative_path = batch["relative_path"][i]
-                            embeddings[case_id].append(
-                                (relative_path, embedding[i])
-                            )
-                        pbar.set_description("Patients {}".format(len(embeddings)))
-                        pbar.update(1)
+                    for i in range(len(batch["case_id"])):
+                        case_id = batch["case_id"][i]
+                        relative_path = batch["relative_path"][i]
+                        embeddings[case_id].append(
+                            (relative_path, embedding[i])
+                        )
+                    pbar.set_description("Patients {}".format(len(embeddings)))
+                    pbar.update(1)
         
         results[name] = embeddings
         
