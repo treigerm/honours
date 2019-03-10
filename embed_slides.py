@@ -7,6 +7,7 @@ import pickle
 import tqdm
 import numpy as np
 import random
+import shelve
 from collections import defaultdict
 
 from models.cae import CAE, TestCAE
@@ -21,6 +22,16 @@ INPUT_SIZE = 128
 
 PATCHES_PER_CASE = 64
 CASES_PER_BATCH = 8
+
+def aggregate_embeddings(embeddings):
+    """
+    Args:
+        embeddings (np.array): size of (num_embeddings, num_hidden_dims)
+    """
+    mean = np.mean(embeddings, axis=0)
+    median = np.median(embeddings, axis=0)
+    std = np.std(embeddings, axis=0)
+    return {"mean": mean, "std": std, "median": median}
 
 def main(checkpoint_path, root_dir, data_csv, batch_size, 
          num_samples, out_file, use_gpu, num_load_workers):
@@ -65,7 +76,7 @@ def main(checkpoint_path, root_dir, data_csv, batch_size,
             batch_size=sampler.batch_size, 
             sampler=sampler,
             num_workers=num_load_workers
-    )
+        )
 
         embeddings = defaultdict(list)
         with torch.no_grad():
@@ -86,9 +97,13 @@ def main(checkpoint_path, root_dir, data_csv, batch_size,
                     pbar.set_description("Patients {}".format(len(embeddings)))
                     pbar.update(1)
         
+        for case_id, case_embeddings in embeddings.items():
+            # case_embeddings: [(relative_path, embeddings)]
+            case_embeddings = np.array([x[1] for x in case_embeddings])
+            embeddings[case_id] = aggregate_embeddings(case_embeddings)
         out = os.path.join(out_dir, "{}_{}".format(name, out_filename))
         with open(out, "wb+") as f:
-            pickle.dump(embeddings, f)
+            pickle.dump(embeddings, f, protocol=4)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
