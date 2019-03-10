@@ -47,6 +47,8 @@ def main(checkpoint_path, root_dir, data_csv, batch_size,
     }
 
     results = {}
+    out_dir = os.path.dirname(out_file)
+    out_filename = os.path.basename(out_file)
     for name, data_split in data_splits.items():
         #data_loader = torch.utils.data.DataLoader(
         #    data_split, batch_size=batch_size, shuffle=False, 
@@ -84,10 +86,9 @@ def main(checkpoint_path, root_dir, data_csv, batch_size,
                     pbar.set_description("Patients {}".format(len(embeddings)))
                     pbar.update(1)
         
-        results[name] = embeddings
-        
-    with open(out_file, "wb+") as f:
-        pickle.dump(results, f)
+        out = os.path.join(out_dir, "{}_{}".format(name, out_filename))
+        with open(out, "wb+") as f:
+            pickle.dump(embeddings, f)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
