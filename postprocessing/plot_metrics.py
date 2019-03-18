@@ -9,6 +9,9 @@ import argparse
 
 from scipy.interpolate import make_interp_spline, BSpline
 
+matplotlib.rcParams.update({'font.size': 18})
+
+
 def make_plot(train_vals, val_vals, metric=None, step_size=100, title="metrics"):
     x_val = range(0,len(val_vals)*step_size, step_size)
 
@@ -24,6 +27,7 @@ def make_plot(train_vals, val_vals, metric=None, step_size=100, title="metrics")
     ax.set_xlabel("Episode")
     ax.set_ylabel(metric)
     ax.legend()
+    fig.tight_layout()
     plt.savefig("{}.pdf".format(title))
 
 def main(metrics_file):
