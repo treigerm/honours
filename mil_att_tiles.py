@@ -42,7 +42,7 @@ def save_images(images, k, out_file=None):
     fig = plt.figure()
 
     for i in range(len(images)):
-        ax = plt.subplot(k, 1, i + 1)
+        ax = plt.subplot(1, k, i + 1)
         #plt.tight_layout()
         #ax.set_title('Sample #{}'.format(i))
         ax.axis('off')
@@ -105,7 +105,7 @@ if __name__ == "__main__":
     parser.add_argument("--root-dir", type=str)
     parser.add_argument("--data-csv", type=str)
     parser.add_argument("--use-gpu", action="store_true")
-    parser.add_argument("--out-file", default="att_tiles.png")
+    parser.add_argument("--out-file", default="att_tiles.pdf")
     parser.add_argument("--batch-size", type=int, default=500)
     parser.add_argument("--num-samples", type=int, default=10000)
     parser.add_argument("--num-load-workers", type=int, default=4)
