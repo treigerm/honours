@@ -7,7 +7,6 @@ import pickle
 import tqdm
 import numpy as np
 import random
-import shelve
 from collections import defaultdict
 
 from models.cae import CAE, TestCAE
@@ -34,7 +33,7 @@ def aggregate_embeddings(embeddings):
     return {"mean": mean, "std": std, "median": median}
 
 def main(checkpoint_path, root_dir, data_csv, batch_size, 
-         num_samples, out_file, use_gpu, num_load_workers):
+         num_samples, out_file, use_gpu, num_load_workers, aggregate):
     torch.manual_seed(RANDOM_SEED)
     np.random.seed(RANDOM_SEED)
     random.seed(RANDOM_SEED)
@@ -97,10 +96,11 @@ def main(checkpoint_path, root_dir, data_csv, batch_size,
                     pbar.set_description("Patients {}".format(len(embeddings)))
                     pbar.update(1)
         
-        for case_id, case_embeddings in embeddings.items():
-            # case_embeddings: [(relative_path, embeddings)]
-            case_embeddings = np.array([x[1] for x in case_embeddings])
-            embeddings[case_id] = aggregate_embeddings(case_embeddings)
+        if aggregate:
+            for case_id, case_embeddings in embeddings.items():
+                # case_embeddings: [(relative_path, embeddings)]
+                case_embeddings = np.array([x[1] for x in case_embeddings])
+                embeddings[case_id] = aggregate_embeddings(case_embeddings)
         out = os.path.join(out_dir, "{}_{}".format(name, out_filename))
         with open(out, "wb+") as f:
             pickle.dump(embeddings, f, protocol=4)
@@ -114,9 +114,10 @@ if __name__ == "__main__":
         default="/exports/igmm/eddie/batada-lab/timreichlet/metadata/all_non_background/metadata_top.csv")
     parser.add_argument("--batch-size", type=int, default=500)
     parser.add_argument("--num-samples", type=int, default=10,
-        help="Number of samples from each 1000x1000 tile.")
+        help="Number of samples from each 1000x1000 tile. Not relevant for PatchWiseDataset.")
     parser.add_argument("--out-file", type=str, default="embeddings.pickle")
     parser.add_argument("--use-gpu", action="store_true")
+    parser.add_argument("--aggregate", action="store_true")
     parser.add_argument("--num-load-workers", type=int, default=4)
     args = parser.parse_args()
     main(**vars(args))

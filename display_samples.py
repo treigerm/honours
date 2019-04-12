@@ -20,21 +20,24 @@ def save_images(images, out_file=None, have_reconstructed=False):
     fig = plt.figure()
 
     if have_reconstructed:
-        rows = len(images) / 2
-        cols = 2
+        cols = len(images) / 2
+        rows = 2
     else:
         cols = len(images)
         rows = 1
-    for i in range(len(images)):
-        ax = plt.subplot(rows, cols, i + 1)
-        #plt.tight_layout()
-        if have_reconstructed:
-            if i == 0:
-                ax.set_title("Original")
-            elif i == 1:
-                ax.set_title("Reconstructed")
+    for i in range(1, int(cols)+1):
+        images_ix = 2 * (i - 1)
+        ax = plt.subplot(rows, cols, i)
         ax.axis("off")
-        plt.imshow(images[i])
+        plt.imshow(images[images_ix])
+        if have_reconstructed:
+            ax = plt.subplot(rows, cols, i + cols)
+            ax.axis("off")
+            plt.imshow(images[images_ix+1])
+
+    plt.subplots_adjust(bottom=0.3, top=0.7)
+    #plt.tight_layout()
+    #plt.show()
     plt.savefig(out_file)
 
 
@@ -51,9 +54,12 @@ def main(root_dir, data_csv, crop_size, batch_size, checkpoint_path, use_gpu,
         model.eval()
 
     dataset = CrossValDataset(
-        data_csv, root_dir,
+        "PatchWiseDataset", data_csv, root_dir,
         image_transform=torchvision.transforms.RandomCrop(crop_size),
-        sample_transform=ToTensor(None)
+        sample_transform=ToTensor(None),
+        rotate=False,
+        flip=False,
+        enhance=False
     )
 
     data_loader = torch.utils.data.DataLoader(
@@ -85,6 +91,6 @@ if __name__ == "__main__":
     parser.add_argument("--crop-size", type=int, default=128)
     parser.add_argument("--batch-size", type=int, default=10)
     parser.add_argument("--use-gpu", action="store_true")
-    parser.add_argument("--out-file", default="samples.png")
+    parser.add_argument("--out-file", default="samples.pdf")
     args = parser.parse_args()
     main(**vars(args))

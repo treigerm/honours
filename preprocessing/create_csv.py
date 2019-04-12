@@ -8,7 +8,6 @@ import argparse
 FIELDNAMES = ["relative_path", "label", "case_id", "section_location"]
 
 def find_tiff_files(root_dir, sub_dir, image_dir=None, identifier=None):
-    # TODO: Describe directory structure.
     os.chdir(root_dir)
     # Find all .tiff tiles.
     if image_dir is not None:
@@ -70,7 +69,6 @@ def main(root_dir,
                 writer.writerow(row)
 
 if __name__ == "__main__":
-    # TODO: Descriptions of arguments.
     parser = argparse.ArgumentParser()
     parser.add_argument("--root-dir")
     parser.add_argument("--csv-filename")
