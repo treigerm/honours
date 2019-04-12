@@ -1,5 +1,14 @@
 # Documentation
 
+This repository contains the code for my honours project. It implements two models 
+to predict the survival of cancer patients based on whole-slide images (WSI). 
+The two models are:
+
+- A multiple-instance learning (MIL) model
+- A convolutional autoencoder (CAE)
+
+For more methodological details please see my honour project report.
+
 The code is organised as follows:
 
 - `data/` stores code to load data
@@ -10,7 +19,7 @@ The code is organised as follows:
 preprocessing can be found in that subdirectory.
 - `utils/` contains various utility functions.
 
-The remaining contents of the repository are described below
+The function of each script is described below.
 
 ## Scripts
 

@@ -1,6 +1,6 @@
 # Preprocessing
 
-Directory structure of input data.
+The scripts assume that the data is stored on disk in the following structure:
 
 ```
 root_dir/
@@ -20,12 +20,14 @@ root_dir/
             ...
 ```
 
+Our complete preprocessing workflow is as follows:
+
+1. Split each WSI (`.svs` files) into tiles (`.tiff` files) and filter out background tiles
+2. Create CSV which stores information about tiles
+3. Split CSV into training, validation and testing set
+
 All Python files are command line scripts. For usage information of each script
 you can run `./{SCRIPT_NAME} --help`.
-
-1. Split WSI and filter tiles
-2. Create CSV
-3. Split CSV into training, validation and testing
 
 ## Split WSI and filter tiles
 
