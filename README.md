@@ -21,6 +21,32 @@ preprocessing can be found in that subdirectory.
 
 The function of each script is described below.
 
+## Environment
+
+To install dependencies either use
+
+```
+conda create --name myenv --file env_explicit.txt
+```
+
+or 
+
+```
+conda env create -f environment.yml
+```
+.
+
+Because the Anaconda distribution on the Eddie server does not have PyTorch 1.0 
+available it was installed with pip using
+
+```
+pip install torch torchvision
+```
+.
+
+If you are on a machine that has PyTorch 1.0 available through Anaconda then it 
+should probably be preferred to use Anaconda instead of pip.
+
 ## Scripts
 
 See `preprocessing/README.md` for how to preprocess the data and in what form 
